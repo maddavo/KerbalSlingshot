@@ -2,6 +2,26 @@
 
 Current stage: **documentation baseline**. No source, builds, installation, or flight checks have been completed for KerbalSlingshot.
 
+## DLL development iteration procedure
+
+Use this cycle for each in-game development iteration. Keep the iteration small enough that its test result can be attributed to a specific change.
+
+1. **Agree on the question.** State the behaviour being added or investigated, its reason, and the change's boundaries. Check any scope change against [SCOPE.md](SCOPE.md).
+2. **Write the test before implementation.** Record the KSP version, required mods, test save/vessel and starting state, exact steps, expected result, pass/fail criteria, and useful evidence to capture if it fails. Use a disposable or recoverable save when a test changes flight state.
+3. **Implement and build.** Make the agreed change, report build errors, and produce a clearly identified DLL. Record the commit, build configuration, KSP/runtime target, DLL version or build ID, and SHA-256. Do not hand over a DLL that did not build successfully.
+4. **Install while KSP is closed.** Confirm the game has exited, preserve the installed working DLL for rollback, then replace only KerbalSlingshot's files. Record the installed path and verify that the installed DLL's SHA-256 matches the build artifact. Never overwrite another mod's files.
+5. **Run the written test.** Follow the agreed steps and criteria with the identified build. Capture the observed outcome and any requested screenshot or relevant `KSP.log` excerpt. Keep the save unchanged unless the test explicitly uses its disposable copy.
+6. **Report the evidence.** Return the build ID/hash, test case, expected and observed behaviour, pass/fail result, and evidence. Distinguish a test failure from an inconclusive run, such as a different DLL being loaded or a missing prerequisite.
+7. **Choose the next iteration.** Compare the result with the criteria. Fix, simplify, or roll back as evidence supports, then define the next question and test. Preserve the last known-good DLL until its replacement passes the relevant smoke test.
+
+An iteration passes only when its pre-agreed observable criteria pass. A useful failure still provides the exact build and reproducible evidence. Do not bundle unrelated changes into a test intended to isolate one behaviour. Numerical harness results, successful builds, DLL-load checks, node predictions, and flown trajectory outcomes are separate evidence; report each at the level actually observed.
+
+## First in-game iteration: load and observe
+
+Before attempting trajectory solving, build a minimal plugin and check that it loads in the agreed KSP version, opens its planner, and displays the active vessel and selected celestial bodies. It must not change the vessel, create a manoeuvre node, or mutate the save. This smoke test validates the game integration boundary before trajectory calculations become a second possible source of failure.
+
+Write the concrete setup and pass criteria after the initial plugin entry point and UI are known. At minimum, pass means the expected DLL is identified in the log, the planner opens, vessel and body names match the current game state, and no node or save-state change occurs. The exact log signature and menu access steps must be specified by that build's test procedure, not guessed in advance.
+
 ## Gate 1: KSP trajectory feasibility
 
 Confirm the intended KSP version and build/runtime references. Investigate an isolated patch-propagation adapter, node coordinate conversion, SOI event handling, terrain safety data, and patch limits.
