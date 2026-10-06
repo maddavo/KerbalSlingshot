@@ -11,9 +11,10 @@ Milestones 1 and 2 add no third-party numerical library or copied solver code. C
 | KSP Assembly-CSharp / firstpass | Local KSP 1.12.5 | Live plugin compile references | Proprietary game files; local references only, `Private=false` |
 | UnityEngine.CoreModule | Local KSP runtime | KSP type references | Local reference only, `Private=false` |
 | UnityEngine.IMGUIModule | Local KSP runtime | In-game GUI controls | Local reference only, `Private=false` |
+| UnityEngine.AnimationModule / TextRenderingModule | Local KSP runtime | Stock toolbar type hierarchy and explicit GUI text styles | Local compile references only, `Private=false`; no Unity files packaged |
 | System.Reflection.Metadata / PEReader | .NET 8 SDK/shared framework | Offline startup/reference metadata inspection | Harness-only framework libraries; not packaged with plugin |
 | MechJeb source | Local commit `aeee32212801b987e0fffcad800e0cb565584abb` | Design/API research | No runtime/build dependency; no solver implementation copied |
 
 The two NuGet packages' installed `.nuspec` files identify Microsoft, mark them as development dependencies, and point to [Microsoft's licence](https://github.com/Microsoft/dotnet/blob/master/LICENSE). This records the declared licence location; review its terms before redistribution. Do not assume all .NET/game/Unity reference binaries share one licence.
 
-The project's own licence remains undecided. Milestone 2 prepares a local test package of authored DLLs and documents only; no public release is published and no KSP/Unity/reference assemblies are distributed. Review and record licence choices before importing a Lambert/optimisation library or publishing a mod package.
+The project's own licence remains undecided. The local test package contains authored DLLs/documents only. The toolbar icon and opaque panel texture are authored procedurally in code, with no external art dependency. No public release is published and no KSP/Unity/reference assemblies are distributed. Review and record licence choices before importing a Lambert/optimisation library or publishing a mod package.

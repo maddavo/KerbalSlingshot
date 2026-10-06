@@ -176,6 +176,7 @@ Check("unexpected grazing SOI entry between scan endpoints",()=>
     Require(e.Status==EvaluationStatus.Rejected && e.Reason.Contains("unexpected"),$"grazing body missed: {e.Status} {e.Reason}");
 });
 PlanningChecks.Run(directory,Check);
+PresentationChecks.Run(directory,Check);
 Directory.CreateDirectory("artifacts");
 File.WriteAllText("artifacts/offline-results.json",JsonSerializer.Serialize(new { Passed=passed,Failed=failed,Fixtures=report },Fixture.JsonOptions));
 Console.WriteLine($"Checks: {passed} passed, {failed} failed. KSP checks: not run.");

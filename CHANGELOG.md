@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 0.2.1 — compact pilot UI and stock toolbar
+
+- Replaced the floating Slingshot button with an owned stock KSP toolbar icon and scene/lifecycle cleanup.
+- Reduced the primary window to 520×684, grouped targets/estimate/calculate/results, and added consistent white text on a dark panel.
+- Promoted node import; grouped optional manual inputs; collapsed Advanced and Details while retaining all safety/search defaults.
+- Added prominent unvalidated result status and five-event summary, locked conflicting controls during jobs, and kept Cancel visible.
+- Added five focused offline presentation checks and a next-session visual checklist; numerical solver and route coverage unchanged.
+- Revised rendering/toolbar behaviour remain unverified in KSP; no installed files or vessel nodes/saves were changed.
+
 ### 0.2.0 — functional planning test prototype
 
 - Added the actual KSP 1.12.5 flight addon, live vessel/body snapshots, target/altitude controls, and typed/read-only imported node estimates.

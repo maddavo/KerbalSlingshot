@@ -1,6 +1,6 @@
 # Development stages
 
-Current stage: **functional candidate-planning plugin ready for a combined KSP test**. Version 0.2.0 adds live snapshot/target/estimate controls, background bounded calculation, event/result display, stale/cancel handling, diagnostics, and read-only existing-patch comparison. The actual `net48` flight addon builds against local KSP 1.12.5 and passes compile/metadata checks; 27 detached harness check groups pass. No installation or in-game checks have been performed. Node creation is unavailable. Gates 1 and 2 retain their in-game exit requirements. See [MILESTONE-2.md](MILESTONE-2.md), [INSTALL.md](INSTALL.md), and the prewritten [combined KSP test](KSP-TEST.md).
+Current stage: **compact UI/stock-toolbar iteration ready for the next combined KSP session**. Version 0.2.1 reorganises the same planner into targets, recommended node import, clear calculation actions, compact unvalidated results, and collapsed Advanced settings. The actual `net48` addon builds against local KSP 1.12.5; 32 offline check groups and startup/reference metadata checks pass. Prior user screenshots show 0.2.0 in flight; revised UI behaviour and trajectory agreement remain unverified. No revised DLL was installed or KSP launched by this chat. Node creation is unavailable; route coverage and in-game Gates 1/2 are unchanged. See [MILESTONE-3.md](MILESTONE-3.md), [INSTALL.md](INSTALL.md), and [UI-ACCEPTANCE.md](UI-ACCEPTANCE.md).
 
 ## Development iteration procedure
 

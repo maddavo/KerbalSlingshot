@@ -1,5 +1,7 @@
 # Milestone 2: functional candidate-planning plugin
 
+Historical 0.2.0 implementation report. Subsequent user screenshots show its panel running in flight but do not establish trajectory validation. [Milestone 3](MILESTONE-3.md) records the compact UI/toolbar iteration and its pending visual acceptance.
+
 Assembly version **0.2.0.0**, Release, target **KSP 1.12.5 / .NET Framework 4.8**. The clean source commit and exact DLL SHA-256 are recorded by `check.ps1` in `artifacts/build-manifest.json` and included in the test ZIP. The window and `[KerbalSlingshot]` log lines display the SDK informational version with source revision.
 
 ## Implemented

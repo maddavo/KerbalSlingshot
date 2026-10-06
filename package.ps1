@@ -21,6 +21,8 @@ try {
     Copy-Item -LiteralPath docs/INSTALL.md -Destination (Join-Path $stage 'INSTALL.md')
     Copy-Item -LiteralPath docs/KSP-TEST.md -Destination (Join-Path $stage 'KSP-TEST.md')
     Copy-Item -LiteralPath docs/MILESTONE-2.md -Destination (Join-Path $stage 'MILESTONE-2.md')
+    Copy-Item -LiteralPath docs/MILESTONE-3.md -Destination (Join-Path $stage 'MILESTONE-3.md')
+    Copy-Item -LiteralPath docs/UI-ACCEPTANCE.md -Destination (Join-Path $stage 'UI-ACCEPTANCE.md')
     Copy-Item -LiteralPath docs/DEPENDENCIES.md -Destination (Join-Path $stage 'DEPENDENCIES.md')
     Copy-Item -LiteralPath artifacts/build-manifest.json -Destination (Join-Path $stage 'build-manifest.json')
     Copy-Item -LiteralPath artifacts/offline-results.json -Destination (Join-Path $stage 'offline-results.json')
@@ -31,7 +33,7 @@ try {
     if (@($files | Where-Object { $_.Path.EndsWith('.dll') }).Count -ne 2) { throw 'Package contains unexpected DLLs' }
     $files | ConvertTo-Json -Depth 3 | Set-Content (Join-Path $stage 'package-files.json') -Encoding utf8
     $zip = "$stage.zip"
-    Compress-Archive -LiteralPath (Join-Path $stage 'GameData'),(Join-Path $stage 'INSTALL.md'),(Join-Path $stage 'KSP-TEST.md'),(Join-Path $stage 'MILESTONE-2.md'),(Join-Path $stage 'DEPENDENCIES.md'),(Join-Path $stage 'build-manifest.json'),(Join-Path $stage 'offline-results.json'),(Join-Path $stage 'plugin-inspection.txt'),(Join-Path $stage 'package-files.json') -DestinationPath $zip
+    Compress-Archive -LiteralPath (Join-Path $stage 'GameData'),(Join-Path $stage 'INSTALL.md'),(Join-Path $stage 'KSP-TEST.md'),(Join-Path $stage 'MILESTONE-2.md'),(Join-Path $stage 'MILESTONE-3.md'),(Join-Path $stage 'UI-ACCEPTANCE.md'),(Join-Path $stage 'DEPENDENCIES.md'),(Join-Path $stage 'build-manifest.json'),(Join-Path $stage 'offline-results.json'),(Join-Path $stage 'plugin-inspection.txt'),(Join-Path $stage 'package-files.json') -DestinationPath $zip
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [IO.Compression.ZipFile]::OpenRead($zip)
     try {

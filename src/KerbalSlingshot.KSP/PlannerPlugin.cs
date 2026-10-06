@@ -14,7 +14,7 @@ using NumericalTrajectory=KerbalSlingshot.Core.Trajectory;
 namespace KerbalSlingshot.KSP
 {
     [KSPAddon(KSPAddon.Startup.Flight,false)]
-    public sealed class PlannerPlugin : MonoBehaviour
+    public sealed partial class PlannerPlugin : MonoBehaviour
     {
         private const string InputLock="KerbalSlingshot.UI";
         private readonly Dictionary<string,string> fields=PlannerSettings.Defaults();
@@ -24,16 +24,15 @@ namespace KerbalSlingshot.KSP
         private string status="Starting estimates are not solutions. No node creation in this prototype.";
         private string report="",patchReport="";
         private int assistIndex,destinationIndex;
-        private bool visible=true,terrainConfirmed;
-        private Rect window=new Rect(20,80,680,680);
-        private Vector2 scroll;
+        private bool visible,terrainConfirmed;
+        private Rect window=new Rect(30,110,PlannerLayout.Width,PlannerLayout.PrimaryHeight);
         private float lastFreshness;
         private Job? job;
         private CapturedPlan? displayedPlan;
         private Burn? displayedBurn;
         private string contextVessel="",contextParent="";
         private static readonly CultureInfo Invariant=CultureInfo.InvariantCulture;
-        private static string Build => typeof(PlannerPlugin).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.2.0";
+        private static string Build => typeof(PlannerPlugin).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.2.1";
         private static string Vector(V3 v) => "("+SnapshotAdapter.F(v.X)+","+SnapshotAdapter.F(v.Y)+","+SnapshotAdapter.F(v.Z)+")";
 
         private sealed class Progress
@@ -59,11 +58,20 @@ namespace KerbalSlingshot.KSP
         public void Start()
         {
             Debug.Log("[KerbalSlingshot] Flight planning plugin "+Build+"; KSP validation pending; node creation unavailable.");
+            window.x=Math.Max(20,Screen.width-PlannerLayout.Width-320);
+            GameEvents.onGUIApplicationLauncherReady.Add(EnsureToolbar);
+            GameEvents.onGUIApplicationLauncherDestroyed.Add(RemoveToolbar);
+            EnsureToolbar();
             Try(ReadContext);
         }
         public void OnDestroy()
         {
             AbandonJob(); gate.Invalidate(); InputLockManager.RemoveControlLock(InputLock);
+            GameEvents.onGUIApplicationLauncherReady.Remove(EnsureToolbar);
+            GameEvents.onGUIApplicationLauncherDestroyed.Remove(RemoveToolbar);
+            RemoveToolbar();
+            if (toolbarIcon!=null) Destroy(toolbarIcon);
+            if (panelTexture!=null) Destroy(panelTexture);
         }
         private void AbandonJob()
         {
@@ -75,7 +83,7 @@ namespace KerbalSlingshot.KSP
         }
         private void Invalidate(string reason)
         {
-            gate.Invalidate(); AbandonJob(); displayedPlan=null; displayedBurn=null; report=""; patchReport=""; status=reason;
+            gate.Invalidate(); AbandonJob(); displayedPlan=null; displayedBurn=null; resultCard=null; report=""; patchReport=""; status=reason;
         }
         private void Try(Action action)
         {
@@ -93,6 +101,7 @@ namespace KerbalSlingshot.KSP
             CelestialBody parent=v.orbit.referenceBody;
             bodyIds=SnapshotAdapter.Children(parent).Select(b=>b.bodyName).ToArray();
             terrainConfirmed=false;
+            estimateReady=false; estimateSource="No estimate imported";
             contextVessel=v.id.ToString(); contextParent=parent.bodyName;
             assistIndex=0; destinationIndex=bodyIds.Length>1?1:0;
             double now=Planetarium.GetUniversalTime();
@@ -108,6 +117,7 @@ namespace KerbalSlingshot.KSP
             fields["Radial m/s"]=SnapshotAdapter.F(node.DeltaV.x);
             fields["Normal m/s"]=SnapshotAdapter.F(node.DeltaV.y);
             fields["Prograde m/s"]=SnapshotAdapter.F(node.DeltaV.z);
+            estimateReady=true; estimateSource="Existing node imported"; manualOpen=false;
         }
         private void Begin(bool refine)
         {
@@ -165,6 +175,7 @@ namespace KerbalSlingshot.KSP
                 Burn? burn=result.Candidate ?? result.DiagnosticBurn;
                 if (!SnapshotAdapter.Fresh(finished.Plan,burn?.UT)) { Invalidate("Completed work is stale; recalculate."); return; }
                 displayedPlan=finished.Plan; displayedBurn=burn;
+                resultCard=new PlannerResultCard(result,finished.Plan.Request,finished.Refine);
                 if (result.Status==SearchStatus.Cancelled)
                     status="Wall budget exhausted: no solution found within bounds. Recalculate with suitable bounds/estimate.";
                 else if (result.Status==SearchStatus.OfflineFeasible)
@@ -252,76 +263,5 @@ namespace KerbalSlingshot.KSP
             status="Diagnostics written: "+file; Debug.Log("[KerbalSlingshot] "+status);
         }
 
-        public void OnGUI()
-        {
-            if (!HighLogic.LoadedSceneIsFlight) return;
-            GUISkin previousSkin=GUI.skin;
-            try
-            {
-            GUI.skin=HighLogic.Skin;
-            if (GUI.Button(new Rect(Screen.width-125,40,115,28),"Slingshot")) visible=!visible;
-            if (!visible) { InputLockManager.RemoveControlLock(InputLock); return; }
-            window.height=Math.Min(720,Math.Max(300,Screen.height-100));
-            window=GUILayout.Window(GetInstanceID(),window,DrawWindow,"KerbalSlingshot "+Build,GUILayout.Width(680),GUILayout.Height(window.height));
-            bool lockControls=window.Contains(Event.current.mousePosition) || GUI.GetNameOfFocusedControl().StartsWith("slingshot:",StringComparison.Ordinal);
-            if (lockControls) InputLockManager.SetControlLock(ControlTypes.ALL_SHIP_CONTROLS,InputLock);
-            else InputLockManager.RemoveControlLock(InputLock);
-            }
-            finally { GUI.skin=previousSkin; }
-        }
-        private void DrawWindow(int id)
-        {
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Read vessel / bodies")) Try(ReadContext);
-            if (GUILayout.Button("Import first future node")) Try(ImportNode);
-            if (GUILayout.Button("Hide")) { visible=false; GUI.FocusControl(""); }
-            GUILayout.EndHorizontal();
-            scroll=GUILayout.BeginScrollView(scroll);
-            GUILayout.Label(context);
-            GUILayout.Label("Shared-parent route only. No parking-orbit departure or planetary escape. UT seconds; altitudes km.");
-            if (bodyIds.Length>0)
-            {
-                GUILayout.Label("Gravity Assist Target");
-                int next=GUILayout.SelectionGrid(assistIndex,bodyIds,Math.Min(3,bodyIds.Length));
-                if (next!=assistIndex) { assistIndex=next; Invalidate("Assist changed; recalculate."); }
-                GUILayout.Label("Intercept Target");
-                next=GUILayout.SelectionGrid(destinationIndex,bodyIds,Math.Min(3,bodyIds.Length));
-                if (next!=destinationIndex) { destinationIndex=next; Invalidate("Destination changed; recalculate."); }
-            }
-            GUILayout.Label("Starting estimate: native node radial / normal / prograde in m/s. Import a manually planned node or type an estimate. No general seed generator.");
-            foreach (string key in fields.Keys.ToArray())
-            {
-                GUILayout.BeginHorizontal(); GUILayout.Label(key,GUILayout.Width(190));
-                GUI.SetNextControlName("slingshot:"+key);
-                string value=GUILayout.TextField(fields[key],GUILayout.Width(230));
-                if (value!=fields[key]) { fields[key]=value; Invalidate("Input changed; recalculate."); }
-                GUILayout.EndHorizontal();
-            }
-            GUILayout.Label("Terrain ceiling applies to the parent and every child. Supply a conservative maximum; this build does not measure terrain maxima.");
-            bool confirmed=GUILayout.Toggle(terrainConfirmed,"I have checked that the terrain ceiling is conservative for this system");
-            if (confirmed!=terrainConfirmed) { terrainConfirmed=confirmed; Invalidate("Safety assumption changed; recalculate."); }
-            GUILayout.BeginHorizontal();
-            bool priorEnabled=GUI.enabled;
-            GUI.enabled=job==null && bodyIds.Length>=2;
-            if (GUILayout.Button("Evaluate estimate")) Try(()=>Begin(false));
-            if (GUILayout.Button("Refine estimate")) Try(()=>Begin(true));
-            GUI.enabled=priorEnabled;
-            if (GUILayout.Button("Cancel")) Invalidate("Cancelled; no nodes changed.");
-            GUILayout.EndHorizontal();
-            if (job!=null)
-            {
-                Progress progress=Volatile.Read(ref job.Progress);
-                GUILayout.Label("Working: "+progress.Count+" / "+job.Settings.Budget+" evaluations | "+progress.Reason);
-            }
-            GUILayout.Label(status); GUILayout.Label(report);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Read existing KSP patches")) Try(ReadPatches);
-            if (GUILayout.Button("Write diagnostics")) Try(WriteDiagnostics);
-            GUILayout.EndHorizontal();
-            GUILayout.Label(patchReport);
-            GUILayout.Label("Node creation is unavailable. Predictions remain unvalidated against KSP until actually compared in game.");
-            GUILayout.EndScrollView();
-            GUI.DragWindow(new Rect(0,0,window.width,24));
-        }
     }
 }

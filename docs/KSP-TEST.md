@@ -10,7 +10,7 @@ For a useful starting estimate, manually prepare one future node on the current 
 
 ## Steps and expected evidence
 
-1. Install only the two authored DLLs using INSTALL.md. Launch KSP once for this whole procedure. Enter the recoverable flight and open **Slingshot** using its flight-screen button.
+1. Install only the two authored DLLs using INSTALL.md. Launch KSP once for this whole procedure. Enter the recoverable flight and open **Slingshot** using its stock toolbar icon. For the revised UI iteration, combine this with UI-ACCEPTANCE.md.
 2. **Read vessel / bodies**. Expect the vessel identity, UT, Kerbin parent, Mun and Minmus selections, and count of relevant child bodies. Choose Mun as assist and Minmus as destination. Confirm the displayed captured orbit/parent are correct.
 3. Set desired destination periapsis altitude in km. Set conservative terrain ceilings for the parent and all children, minimum assist altitude, clearance margin, departure/journey limits, and search/time budgets. Confirm the terrain-ceiling acknowledgement only after checking the assumptions. Atmospheres are read from KSP and included in safety constraints.
 4. **Import first future node**. Expect its UT/components and a frame-consistency check. The plugin must not add, edit, or delete any node. An earlier burn, a node on another patch, or an unsupported route must be rejected with a reason.

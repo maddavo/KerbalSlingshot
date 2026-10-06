@@ -7,6 +7,8 @@
     <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(KspManagedPath)/Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(KspManagedPath)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(KspManagedPath)/UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(KspManagedPath)/UnityEngine.AnimationModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(KspManagedPath)/UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
   <Target Name="RequireKspReferences" BeforeTargets="ResolveReferences">
     <Error Condition="!Exists('$(KspManagedPath)/Assembly-CSharp.dll')" Text="Set KspManagedPath to your KSP 1.12.5 KSP_x64_Data/Managed directory (local.props or -p:KspManagedPath)." />
