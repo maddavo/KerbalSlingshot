@@ -1,6 +1,6 @@
 # Solver and integration design
 
-This is the product architecture. Milestone 1 implements the detached sibling-body numerical core, ordered offline constraints, imported approximate seeds, and bounded coordinate pattern search. The live adapter/validator, general seed generation, UI, and node controller remain proposed. See [milestone evidence](MILESTONE-1.md) for the implementation boundary and numerical checks.
+This is the product architecture. Milestone 1 implements the detached numerical core and bounded local search. [Milestone 2](MILESTONE-2.md) connects main-thread live snapshots and explicit starting-estimate controls to that solver in a functional flight addon. General seed generation, independent live trajectory validation, and node creation remain unimplemented. Offline-feasible results retain no KSP-validation authority.
 
 ## Components
 

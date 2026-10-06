@@ -1,6 +1,6 @@
 # Development stages
 
-Current stage: **first offline implementation milestone complete**. The detached sibling-body core, bounded solver increment, frozen fixtures, and repeatable harness are implemented and checked. The core and KSP API contract build for `net48` against local KSP 1.12.5; the harness executes on `net8.0`. No installation or in-game checks have been performed. Gates 1 and 2 retain their in-game exit requirements. See [MILESTONE-1.md](MILESTONE-1.md) for exact evidence and limitations.
+Current stage: **functional candidate-planning plugin ready for a combined KSP test**. Version 0.2.0 adds live snapshot/target/estimate controls, background bounded calculation, event/result display, stale/cancel handling, diagnostics, and read-only existing-patch comparison. The actual `net48` flight addon builds against local KSP 1.12.5 and passes compile/metadata checks; 27 detached harness check groups pass. No installation or in-game checks have been performed. Node creation is unavailable. Gates 1 and 2 retain their in-game exit requirements. See [MILESTONE-2.md](MILESTONE-2.md), [INSTALL.md](INSTALL.md), and the prewritten [combined KSP test](KSP-TEST.md).
 
 ## Development iteration procedure
 
@@ -73,12 +73,12 @@ Exit evidence: demonstrated route families, measured search duration and accurac
 
 ```text
 src/KerbalSlingshot.Core/       detached numerical model and bounded local search
-src/KerbalSlingshot.KSP/        compile-only API contract; no live planner yet
+src/KerbalSlingshot.KSP/        flight addon, snapshot adapter, planner UI, read-only comparison
 tests/KerbalSlingshot.Harness/  repeatable offline numerical/constraint checks
 fixtures/                     frozen synthetic scenarios and provenance
 docs/                         scope, design, evidence, dependency review
 ```
 
-The solution and build/check scripts use the .NET 8 SDK. Core targets are `net48;net8.0`; the KSP contract uses `net48` and local non-copying references. Keep machine-specific KSP paths in ignored `local.props` or pass `KspManagedPath` to the scripts. Reference the user's game assemblies without committing them. Development-only framework reference packages and source research are recorded in [DEPENDENCIES.md](DEPENDENCIES.md).
+The solution and build/check/package scripts use the .NET 8 SDK. Core targets are `net48;net8.0`; the actual flight plugin uses `net48` and local non-copying references. `check.ps1` also inspects addon/reference metadata without executing game assemblies. `package.ps1` requires a clean commit, verifies the offline checks, and copies only the two authored DLLs to a local test ZIP with build/hash evidence. Keep machine-specific KSP paths in ignored `local.props` or pass `KspManagedPath`. Development-only framework reference packages and source research are recorded in [DEPENDENCIES.md](DEPENDENCIES.md).
 
 These gates are project documentation, not scheduled reminders or entries in a personal task system. No calendar commitments or effort estimates are assigned.

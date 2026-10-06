@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 0.2.0 — functional planning test prototype
+
+- Added the actual KSP 1.12.5 flight addon, live vessel/body snapshots, target/altitude controls, and typed/read-only imported node estimates.
+- Connected bounded calculation with progress, cancellation, stale-result handling, complete offline-feasible predictions, and rejected partial-route diagnostics.
+- Added read-only existing-patch comparison, evidence export, nine integration-plumbing check groups, and addon/reference metadata inspection.
+- Added clean-commit local test packaging, reversible installation steps, and one combined in-game test. Only the two authored DLLs are packaged.
+- No node creation, installed-DLL overwrite, KSP launch, in-game-validation claim, or published release.
+
 ### 2026-10-06
 
 - Implemented detached 3D conic propagation, finite-SOI event handling, ordered flyby/destination constraints, and bounded deterministic local refinement.

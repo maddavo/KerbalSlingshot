@@ -12,11 +12,15 @@ namespace KerbalSlingshot.Core
         public Burn? Candidate { get; }
         public Evaluation? Evaluation { get; }
         public int Evaluations { get; }
+        public Burn? DiagnosticBurn { get; }
+        public Evaluation? DiagnosticEvaluation { get; }
         public IReadOnlyDictionary<string,int> Rejections { get; }
         public bool KspValidated => false;
-        public SearchResult(SearchStatus status,string message,Burn? candidate,Evaluation? evaluation,int count,Dictionary<string,int> rejections)
+        public SearchResult(SearchStatus status,string message,Burn? candidate,Evaluation? evaluation,int count,Dictionary<string,int> rejections,
+            Burn? diagnosticBurn=null,Evaluation? diagnosticEvaluation=null)
         { Status=status; Message=message; Candidate=candidate; Evaluation=evaluation; Evaluations=count;
-          Rejections=new System.Collections.ObjectModel.ReadOnlyDictionary<string,int>(rejections); }
+          Rejections=new System.Collections.ObjectModel.ReadOnlyDictionary<string,int>(rejections);
+          DiagnosticBurn=diagnosticBurn; DiagnosticEvaluation=diagnosticEvaluation; }
     }
 
     public static class Search
@@ -24,14 +28,16 @@ namespace KerbalSlingshot.Core
         // Bounded coordinate pattern search, deterministic seed order. Seeds carry no feasibility authority.
         // This is a local increment, not a Lambert generator or a global optimiser.
         public static SearchResult Solve(Request r,IReadOnlyList<Burn> seeds,int budget,double timeStep,double velocityStep,
-            CancellationToken cancellation=default)
+            CancellationToken cancellation=default,Action<int,string>? progress=null)
         {
             var rejected=new Dictionary<string,int>();
             int count=0;
             Burn? best=null;
             Evaluation? accepted=null;
+            Burn? diagnosticBurn=null;
+            Evaluation? diagnostic=null;
             string? invalid=r.InvalidReason();
-            SearchResult End(SearchStatus s,string message) => new SearchResult(s,message,best,accepted,count,rejected);
+            SearchResult End(SearchStatus s,string message) => new SearchResult(s,message,best,accepted,count,rejected,diagnosticBurn,diagnostic);
             if (invalid!=null || seeds.Count==0 || budget<=0 || !Numeric.Finite(timeStep) || timeStep<=0 ||
                 !Numeric.Finite(velocityStep) || velocityStep<=0)
                 return End(SearchStatus.InvalidInput,invalid ?? "invalid search controls");
@@ -41,6 +47,10 @@ namespace KerbalSlingshot.Core
             {
                 count++;
                 Evaluation e=Trajectory.Evaluate(r,b,cancellation);
+                if (e.Status!=EvaluationStatus.InvalidInput && e.Status!=EvaluationStatus.Cancelled &&
+                    e.Status!=EvaluationStatus.NumericalFailure &&
+                    (diagnostic==null || e.Score<diagnostic.Score)) { diagnostic=e; diagnosticBurn=b; }
+                progress?.Invoke(count,e.Reason);
                 if (e.Status!=EvaluationStatus.OfflineFeasible)
                 { rejected.TryGetValue(e.Reason,out int n); rejected[e.Reason]=n+1; }
                 else if (!best.HasValue || b.DeltaV.Length<best.Value.DeltaV.Length ||

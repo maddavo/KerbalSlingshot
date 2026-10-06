@@ -4,6 +4,11 @@ using KerbalSlingshot.Core;
 using KerbalSlingshot.Harness;
 
 CultureInfo.CurrentCulture=CultureInfo.InvariantCulture;
+if (args.Length==3 && args[0]=="--inspect-plugin")
+{
+    PackageInspection.Check(args[1],args[2]);
+    return;
+}
 if (args.Length==2 && args[0]=="--construct")
 {
     // Maintenance-only, never called by checks. Fixtures remain frozen during normal validation.
@@ -170,6 +175,7 @@ Check("unexpected grazing SOI entry between scan endpoints",()=>
     Evaluation e=Trajectory.Evaluate(request,burn);
     Require(e.Status==EvaluationStatus.Rejected && e.Reason.Contains("unexpected"),$"grazing body missed: {e.Status} {e.Reason}");
 });
+PlanningChecks.Run(directory,Check);
 Directory.CreateDirectory("artifacts");
 File.WriteAllText("artifacts/offline-results.json",JsonSerializer.Serialize(new { Passed=passed,Failed=failed,Fixtures=report },Fixture.JsonOptions));
 Console.WriteLine($"Checks: {passed} passed, {failed} failed. KSP checks: not run.");

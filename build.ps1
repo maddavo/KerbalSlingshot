@@ -10,9 +10,10 @@ try {
         $buildArgs = @('build', 'src/KerbalSlingshot.KSP', '-c', 'Release')
         if ($KspManagedPath) { $buildArgs += "-p:KspManagedPath=$KspManagedPath" }
         & dotnet @buildArgs
-        if ($LASTEXITCODE -ne 0) { throw 'KSP contract build failed' }
+        if ($LASTEXITCODE -ne 0) { throw 'KSP plugin build failed' }
         $outputFiles = Get-ChildItem src/KerbalSlingshot.KSP/bin/Release/net48 -Filter '*.dll'
-        if ($outputFiles.Name -match '^(Assembly-CSharp|UnityEngine)') { throw 'Game assemblies copied to output' }
+        $expectedNames = @('KerbalSlingshot.Core.dll', 'KerbalSlingshot.KSP.dll')
+        if (Compare-Object $expectedNames @($outputFiles.Name)) { throw 'Unexpected DLLs in output; package only the two authored mod DLLs' }
         $outputFiles | Get-FileHash -Algorithm SHA256
     }
 } finally { Pop-Location }

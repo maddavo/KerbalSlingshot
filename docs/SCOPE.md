@@ -1,6 +1,6 @@
 # Mod scope
 
-Scope baseline: 5 October 2026. These are the agreed product boundaries. Milestone 1 implements a detached sibling-body prototype; live integration, other route families, and flight validation remain outstanding. See [milestone evidence](MILESTONE-1.md).
+Scope baseline: 5 October 2026. These are the agreed product boundaries. [Milestone 2](MILESTONE-2.md) adds a functional sibling-body candidate-planning plugin with an explicit supplied estimate. Selected targets with nested children are rejected. Other route families, general seed generation, KSP trajectory validation, and node creation remain outstanding.
 
 ## Goal
 

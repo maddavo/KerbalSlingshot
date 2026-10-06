@@ -1,6 +1,6 @@
 # Milestone 1: offline prototype evidence
 
-Implementation baseline: 6 October 2026. Build identity: assembly version **0.1.0.0**, Release. The exact source revision is the commit containing this report; `check.ps1` also records the current revision and working-tree state in an ignored build manifest.
+Historical implementation baseline: 6 October 2026, commit `3c39b85b8c2df1c623c6c6cecc3673974143d86b`. Build identity: assembly version **0.1.0.0**, Release. This report records that milestone's evidence. [Milestone 2](MILESTONE-2.md) supersedes its compile-only integration status with a functional 0.2.0 planning plugin; current checks/manifests describe the current commit, not the old 0.1.0 build.
 
 ## Implemented boundary
 
