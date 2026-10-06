@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 2026-10-06 — corrected automatic-planning requirement
+
+- Clarified that the pilot selects assist body, destination body, and destination periapsis; the mod must generate its own candidate burns and create a validated departure node.
+- Marked supplied-estimate/import and native burn-frame failure as prototype gaps, not pilot setup requirements.
+- Replaced the next-session test procedure with a no-preparatory-node Mun-to-Minmus acceptance test.
+
 ### 0.2.1 — compact pilot UI and stock toolbar
 
 - Replaced the floating Slingshot button with an owned stock KSP toolbar icon and scene/lifecycle cleanup.

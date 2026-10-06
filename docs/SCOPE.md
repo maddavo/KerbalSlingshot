@@ -1,93 +1,73 @@
 # Mod scope
 
-Scope baseline: 5 October 2026. These are the agreed product boundaries. [Milestone 2](MILESTONE-2.md) adds a functional sibling-body candidate-planning plugin with an explicit supplied estimate. Selected targets with nested children are rejected. Other route families, general seed generation, KSP trajectory validation, and node creation remain outstanding.
+Product contract clarified 6 October 2026: the pilot selects the assist body, destination body, and destination periapsis altitude. KerbalSlingshot itself searches from the active vessel's current orbit and creates the departure manoeuvre node for a validated result. The pilot is never required to design, import, or type a preliminary manoeuvre node.
+
+The installed 0.2.1 prototype does not yet meet this contract. It refines a supplied estimate, has a reported native burn-frame import failure, does not validate candidates against KSP, and cannot create nodes. It is an interim engineering prototype, not a usable implementation of the requested workflow. See [Milestone 3](MILESTONE-3.md) and the next implementation gates in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Goal
 
-Given the active vessel's actual orbit, a selected gravity-assist body, a selected destination body, and a requested destination periapsis altitude, find and create one departure manoeuvre node whose natural trajectory performs the selected flyby and reaches that destination.
+From the active vessel's actual orbit, automatically find a bounded, feasible single-burn trajectory that enters the selected gravity-assist body's SOI, performs a safe unpowered flyby, exits that SOI unbound, then encounters the selected destination at the requested periapsis altitude. After the user reviews the fully KSP-validated candidate and chooses **Create Node**, add the departure manoeuvre node to the vessel.
 
-The assist must be an unpowered passage through the body's SOI with positive incoming and outgoing hyperbolic excess energy. The destination must be encountered after the assist exit. Escaping the assist body's SOI does **not** require escaping its parent body or the entire planetary system.
+The search may generate and refine any number of internal guesses. Those guesses are solver details, not user inputs or required setup. If automatic search has not found a candidate, the interface must explain its bounded failure; it must not ask the pilot to supply a manoeuvre as a way to make the planner work.
 
-## First-version boundaries
+An assist exit means escape from that body's SOI, not necessarily escape from its parent body's SOI or the whole planetary system. Arrival is a periapsis encounter, not automatic capture.
 
-| Area | Proposed scope |
-| --- | --- |
-| Game | KSP 1, initially version 1.12.5 |
-| Operation | Active vessel in flight/map view with manoeuvre planning available |
-| Targets | Two distinct celestial bodies with finite SOIs; the central star is not a selectable encounter target |
-| Departure | Actual vessel state on a supported current conic; no assumed ideal parking orbit |
-| Burns | One impulsive departure burn; zero powered flyby or arrival burns |
-| Assist | Exactly one selected, unpowered flyby with safe clearance |
-| Arrival | Destination SOI entry and a subsequent periapsis at the requested altitude |
-| Search | Finite time and delta-v bounds, progress, cancellation, and explicit failure reasons |
-| Node | Review first, then add one node only from a validated result |
-| Integration | Standalone plugin; no required MechJeb integration |
-| Celestial data | Read from the running game; stock system is the initial validation baseline |
+## Initial supported route
 
-The first version aims to cover these route families, delivered in stages:
+The first complete route to implement and test is the screenshot scenario:
 
-- A vessel already in the shared parent SOI, encountering two bodies orbiting that parent. This isolates the flyby problem, for example a vessel in Kerbin's SOI using Mun before encountering Minmus, if a reachable geometry is found.
-- Departure from a planet's parking orbit, a flyby of one of its moons, departure from the planet's SOI, and encounter with another planet. Kerbin -> Mun assist -> Duna encounter is a candidate feasibility case, not a promised solution at any date.
-- Departure from a planet's parking orbit, followed by a different planet's flyby and a third planet's encounter. The initial departure SOI transition must be included.
+- The active vessel is coasting in Kerbin's SOI and outside the SOIs of Kerbin's child bodies.
+- Mun is selected as the gravity-assist target.
+- Minmus is selected as the intercept target.
+- The destination periapsis altitude is selected in kilometres above Minmus's reference surface.
+- The mod generates candidate departure burns from the captured vessel state, validates a complete Mun-to-Minmus route, and offers one departure node for explicit creation.
 
-These families are part of the intended scope, but support for each requires the development gates in [DEVELOPMENT.md](DEVELOPMENT.md). Arbitrary nested moon/planet routes, repeated encounters, and resonance tours are outside the initial version. Unsupported body hierarchies must be reported before starting a search.
+The same-parent sibling-body route family may support other bodies when validated. Parking-orbit departure, departure across the vessel's current reference-body SOI, nested target-body encounters, multiple assists, and planet-to-planet routes are outside this first complete route unless separately implemented and verified. Report unsupported geometry explicitly.
 
-## Input contract
+## Pilot inputs and actions
+
+Required inputs are only:
 
 | Input | Meaning |
 | --- | --- |
 | Gravity Assist Target | Celestial body to fly past without thrust |
 | Intercept Target | Celestial body whose SOI and periapsis must be reached next |
-| Intercept Target Distance | **Periapsis altitude in km above the destination's reference surface**, not separation from its centre or another vessel |
-| Departure window | Earliest/latest allowed departure UT; defaults derived from now and the relevant orbital periods |
-| Maximum journey duration | Latest permitted destination periapsis relative to departure |
-| Maximum departure delta-v | Upper bound on the single burn; not a guarantee the vessel has enough fuel |
-| Minimum assist altitude | Lower bound above terrain and any atmosphere, with a configurable clearance margin |
-| Periapsis tolerance | Permitted absolute error in the requested destination altitude |
-| Search budget | Maximum computation time or candidate evaluations |
+| Intercept Target Distance | Periapsis altitude in km above the destination reference surface |
 
-Only the first three inputs need prominent controls. Advanced settings must display their effective values and units; their numerical defaults will be chosen from measured feasibility results. Store time internally as game universal time in seconds. Display time using the game's calendar, not Windows wall-clock time.
+The mod derives initial guesses from the active vessel's current state and celestial ephemerides, explores departure times and burn directions within displayed/default search bounds, and refines candidates internally. It may expose optional departure-window, journey, delta-v, clearance, tolerance, and computation limits in Advanced settings. Safe defaults must allow a normal calculation to start without the pilot configuring algorithm internals. Any explicit safety assumption, such as a conservative terrain ceiling, must be explained in user language.
 
-Convert requested altitude to internal periapsis radius with `radius = body.Radius + altitude`. Reject nonfinite values, invalid time bounds, identical targets, an assist that is the vessel's current reference body, and destination altitudes outside the SOI or below the configured safe clearance. Atmosphere entry and impact trajectories are excluded from the initial version. Terrain safety requires an explicit conservative bound or terrain evaluation; the body's reference radius alone is insufficient.
+Convert altitude to periapsis radius using `radius = body.Radius + altitude`. Reject nonfinite values, identical targets, unsupported body hierarchies, unsafe periapsis requests, stale snapshots, and routes outside configured bounds. Do not substitute a user-authored seed burn when automatic search fails.
 
-## User-visible result
+## Candidate, validation, and node contract
 
-A successful candidate must include departure UT, prograde/normal/radial delta-v, total delta-v, assist SOI entry/periapsis/exit times, assist altitude and clearance, destination SOI entry/periapsis times, achieved destination altitude and error, destination periapsis speed, and total journey duration. Include the search bounds and whether the result has passed KSP trajectory validation.
+A proposed candidate includes departure UT, total delta-v and native node components, assist SOI entry/periapsis/exit, destination SOI entry/periapsis, achieved altitude and error, arrival speed, journey duration, and relevant bounds.
 
-Rank feasible candidates by departure delta-v, with shorter journey duration breaking ties. Do not claim a global optimum. A speed increase is not required: a useful assist can reduce speed or change direction/inclination.
+An offline candidate is not a node-ready solution. Before **Create Node** becomes available, KSP must confirm the same ordered patch/body sequence and destination periapsis within tolerance, the departure vector must round-trip through KSP's native manoeuvre frame, the result must still match the current vessel and node plan, and no unsafe conflict may exist. Preserve existing nodes. Never silently replace or delete them; block creation with a clear explanation when the current plan prevents trustworthy validation.
 
-Distinct outcomes must include: validated solution, invalid request, unsupported route, no solution found within bounds, cancelled, stale vessel state, and KSP validation failure. An approximate near miss may be shown for diagnosis but must not enable Create Node. A search timeout is not proof of physical impossibility.
+Creating a node adds exactly one departure node after an explicit user action. It never executes the burn, changes time warp, or mutates the save beyond the node KSP itself records. If node creation or the subsequent KSP prediction check fails, remove only the node created by this operation and report the failure.
 
-## Acceptance criteria for the first release
+Outcomes must distinguish a KSP-validated solution, offline candidate awaiting validation, invalid request, unsupported route, no solution found within bounds, cancelled search, stale state, validation disagreement, and node-creation failure. A timeout or failed seed set is not proof that no physical route exists. Never claim global optimality.
 
-1. The candidate starts from the active vessel's captured orbit and contains only one planned velocity impulse.
-2. Propagation enters the selected assist SOI, passes a safe periapsis, and exits it on an unbound conic.
-3. Propagation then enters the selected destination SOI and reaches its periapsis within the requested tolerance and journey limit.
-4. All departure, flyby, safety, and time bounds hold; unexpected intermediate encounters invalidate the supported sequence.
-5. KSP patch propagation confirms the same body sequence and final periapsis within the configured tolerance before the candidate is marked valid.
-6. Creating a node preserves unrelated nodes and refuses incompatible existing future nodes; recalculation and cancellation do not mutate the vessel's plan.
-7. Vessel changes, orbit changes, target changes, or a passed burn time invalidate the result before insertion.
-8. Each claimed supported route family has at least one reproducible positive fixture and one deliberately invalid or constrained failure fixture.
-9. Flight evidence follows a representative created node through assist exit and destination encounter, recording execution error separately from prediction error.
-10. Search remains cancellable and does not freeze the game; measured timing and accuracy limits are documented with the release.
+## Acceptance criteria for the first usable route
 
-## Excluded from the first version
+1. Dave can begin from a vessel already in Kerbin's SOI with no pre-existing manoeuvre node and no manually supplied burn estimate.
+2. Selecting Mun, Minmus, and a destination periapsis altitude is sufficient to start automatic candidate search; optional safety settings are explained and have usable defaults.
+3. The search itself generates and refines multiple departure/geometry candidates within finite compute and trajectory bounds, remains cancellable, and reports its bounds and honest failure state.
+4. Any accepted trajectory enters Mun's SOI, clears terrain/atmosphere by the configured margin, reaches Mun periapsis on an unpowered hyperbola, exits Mun's SOI unbound, then enters Minmus's SOI and reaches the requested periapsis within tolerance.
+5. Unexpected encounters, wrong event order, incomplete patch chains, stale vessel states, and coordinate-frame disagreement prevent node creation.
+6. KSP's predicted patch sequence and periapsis agree with the candidate before the node is offered for creation.
+7. Pressing **Create Node** adds exactly one node with the validated UT and delta-v. Existing conflicting nodes remain untouched and cause a clear refusal.
+8. A recoverable-save in-game test starts with no preparatory node and demonstrates target selection, automatic calculation, validation, and node insertion. Record predicted versus KSP patch events and errors.
+9. Offline fixtures cover generated seeds, reachable route refinement, constrained search exhaustion, unsafe flyby, invalid input, cancellation, freshness, and native-frame conversion. Offline tests do not count as KSP or flight validation.
+10. Publish measured accuracy, search duration, and supported route limits. Do not call a route supported based only on synthetic fixtures or successful compilation.
 
-- Multiple assists, automatic assist-body selection, and resonant return tours.
-- Powered flybys, deep-space correction nodes, capture, circularisation, rendezvous, and landing.
-- Spacecraft, stations, asteroids, or comets as intercept targets.
-- Autopilot, automatic burn execution, staging, or automatic time warp.
-- Finite-thrust trajectory optimisation and guaranteed accuracy for long burns.
-- Aerobraking, aerogravity assists, atmosphere traversal, or impact planning.
-- N-body dynamics, Principia support, and KSP 2.
+## Excluded from the initial route
+
+- Pilot-created/imported/manual starting burns as a required workflow.
+- More than one assist, powered flybys, correction burns, capture, circularisation, rendezvous, and landing.
+- Automatic burn execution, staging, or time warp.
+- Spacecraft, stations, asteroids, or comets as targets.
+- Aerobraking, atmosphere traversal, impact planning, N-body dynamics, Principia, and KSP 2.
 - Guaranteed compatibility with planet packs or rescaled systems before validation.
 
-## Decisions still requiring evidence
-
-- Numerical search bounds, tolerances, clearance margins, and performance targets.
-- Whether all three route families can converge robustly with a single burn.
-- Exact KSP API behaviour, isolated validation strategy, and patch-depth limits.
-- Build framework and packaging details for the installed KSP/Unity runtime.
-- Project licence and any permitted third-party solver reuse.
-
-If a route needs a second burn to be practical, report that limitation and review the scope explicitly. Do not silently add correction burns to a one-node result.
+If a desired route needs additional burns or cannot be searched reliably, state that limitation. Do not ask the pilot to create an approximate node to compensate for missing automatic search.

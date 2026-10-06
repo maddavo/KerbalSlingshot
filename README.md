@@ -4,7 +4,7 @@ A proposed gravity-assist manoeuvre planner for **Kerbal Space Program 1**.
 
 Choose a **Gravity Assist Target**, an **Intercept Target**, and an **Intercept Target Distance**. KerbalSlingshot will search for one departure manoeuvre that sends the active vessel through the assist body's sphere of influence (SOI), leaves it on an escape trajectory, and subsequently encounters the destination at the requested periapsis altitude.
 
-**Status: compact candidate-planning test prototype, version 0.2.1.** The flight plugin builds for .NET Framework 4.8 against KSP 1.12.5. This UI iteration uses the stock toolbar, a grouped pilot workflow and collapsed Advanced settings. The user's screenshots show the prior 0.2.0 panel loaded in flight; the revised UI and trajectory agreement still need the combined KSP check. No published release or enabled node creation.
+**Status: interim test prototype, version 0.2.1.** It builds for .NET Framework 4.8 against KSP 1.12.5, but it does not yet perform the requested job: it requires a pilot-supplied starting estimate, automatic seed generation is absent, a native burn-frame import failure has been reported, candidates are not validated against KSP, and it cannot create nodes. Do not treat it as a working Mun-to-Minmus slingshot planner. The product goal below is the corrected user contract; these missing capabilities are the next development work.
 
 ## Intended flight sequence
 
@@ -20,16 +20,15 @@ Current vessel orbit
 
 The node describes the departure burn. Gravity and the encounter geometry produce the later trajectory; there is no planned burn at the assist body or destination. Arrival is an encounter, not automatic orbital capture.
 
-## Test prototype use
+## Intended pilot workflow
 
-1. Install the two authored DLLs using [INSTALL.md](docs/INSTALL.md), then open **Slingshot from KSP's stock mod toolbar** in a recoverable flight.
-2. **Read vessel / bodies** and select two distinct direct children of the current parent. The vessel must already be outside all child SOIs. Selected targets with their own children are not yet supported.
-3. Enter the destination periapsis altitude beside its **km** unit. Open **Advanced** to review the conservative terrain ceiling and safety/search bounds; acknowledge the terrain assumption after checking it, then collapse Advanced.
-4. Type a starting estimate's departure UT and native radial/normal/prograde m/s, or **Import first future node** from a manually prepared single node on the current patch. An imported node is only a starting estimate and is never changed.
-5. **Evaluate estimate** or **Refine estimate**. Review the complete offline-feasible prediction or clearly labelled rejected/partial diagnostics. Cancellation and bounded computation are available.
-6. Use **Read existing KSP patches** and the [combined test procedure](docs/KSP-TEST.md) for manual comparison. The plugin never calls a result KSP-validated and **does not create nodes**. Write diagnostics to capture exact settings and evidence.
+1. Open **Slingshot** from KSP's stock mod toolbar while controlling a supported vessel.
+2. Select the Gravity Assist Target, Intercept Target, and desired destination periapsis altitude in **km**.
+3. The mod automatically searches from the active vessel's current orbit. The pilot is not expected to create or import a preliminary maneuver node or supply a burn estimate.
+4. Review the complete predicted flyby and destination encounter. The mod enables **Create Node** only after KSP validates the full route, frame conversion, safety, and periapsis.
+5. Press **Create Node** to add the single departure node. The mod never executes the burn or changes time warp.
 
-There is no general seed generator. The prototype performs local refinement around the supplied estimate; arbitrary requests can return no solution found within bounds. Parking-orbit departures, source SOI changes, and moon-assisted planetary escape remain unimplemented. Automatic creation of a KSP-validated node remains a future product requirement.
+This is the product contract, not a claim about version 0.2.1. See [scope](docs/SCOPE.md) and [development stages](docs/DEVELOPMENT.md) for the gap and acceptance criteria.
 
 ## Build and offline checks
 
@@ -55,7 +54,7 @@ The core targets `net48` and `net8.0`; the harness runs on .NET 8, and the fligh
 - [Research references](docs/REFERENCES.md): primary sources and limits of current evidence.
 - [Milestone 1 evidence](docs/MILESTONE-1.md): implemented behaviour, reproducible checks, and unresolved questions.
 - [Milestone 2 evidence](docs/MILESTONE-2.md), [installation/rollback](docs/INSTALL.md), and [combined KSP test](docs/KSP-TEST.md).
-- [Milestone 3 UI evidence](docs/MILESTONE-3.md) and the [next-session visual checklist](docs/UI-ACCEPTANCE.md).
+- [Milestone 3 UI evidence and product correction](docs/MILESTONE-3.md), [automatic-planning KSP test](docs/KSP-TEST.md), and [UI acceptance checklist](docs/UI-ACCEPTANCE.md).
 - [Dependency/licence review](docs/DEPENDENCIES.md) and [fixture provenance](fixtures/README.md).
 - [Change log](CHANGELOG.md).
 

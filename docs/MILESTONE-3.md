@@ -1,5 +1,7 @@
 # Milestone 3 — compact pilot UI and stock toolbar
 
+> **Product-contract correction, 6 October 2026:** the pilot must not need a preplanned/imported manoeuvre or manual burn estimate. The 0.2.1 UI iteration below promoted node import, but that was the wrong user workflow. It did not deliver automatic route discovery or node creation. Dave's screenshot also shows `Native burn-frame check failed`; this is a prototype defect, not a pilot setup task. The next milestone must generate candidates from the live vessel state, validate the full Mun-to-Minmus route in KSP, and create one node after the pilot chooses Create Node. Until that exists, do not ask Dave to retry the estimate/import process.
+
 Version **0.2.1**, assembly version **0.2.1.0**, Release `net48`, KSP 1.12.5. Exact clean-commit identity and DLL SHA-256 are supplied in the packaged build manifest. This is a focused UI iteration; numerical propagation, search, route coverage, snapshot capture, and node safety are unchanged.
 
 ## Feedback and implemented changes
@@ -28,3 +30,5 @@ Actual addon startup/reference metadata is inspected without executing KSP. Nati
 Use the included **UI-ACCEPTANCE.md** in one consolidated KSP flight. Check no scrolling is needed for the primary flow/result at 1920×1080, toolbar toggle/scene lifecycle, foldouts, search/cancel locks, readable results, and unchanged node/save state. Include screenshots, UI scale, manifest, and failures; do not perform a standalone load-only run.
 
 The same shared-parent route restriction, explicit supplied estimate, conservative user-reviewed terrain bounds, unsupported nested target children, and no-solution-within-bounds semantics remain. No node creation/edit/deletion, burn execution, time warp, save mutation, general seed generation, or extra route family was added. No revised DLL was installed and KSP was not launched during this work.
+
+The supplied-estimate workflow described in this milestone is retained here only as an accurate account of version 0.2.1. It is superseded as a product direction by [SCOPE.md](SCOPE.md). The 0.2.1 binary cannot pass the automatic no-preparatory-node acceptance test.

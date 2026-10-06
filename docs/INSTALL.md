@@ -2,6 +2,8 @@
 
 Target: **KSP 1.12.5**, stock patched conics, no Principia. This is a private/local test package, not a published release. Assembly version: **0.2.1.0**. The package's `build-manifest.json` identifies the exact clean source commit and SHA-256 of every built DLL. `package-files.json` identifies the packaged copies. Revised UI/toolbar behaviour and trajectory agreement await the combined test.
 
+**Important:** version 0.2.1 is an interim prototype and does not perform the requested automatic planning workflow. It requires a supplied estimate, has a reported node-import frame-check failure, does not validate candidates against KSP, and cannot create nodes. Do not ask the pilot to prepare or import a manoeuvre node to compensate. Use this installation only for development diagnosis or rollback; the user acceptance procedure applies to a later package that implements automatic search and node creation.
+
 ## Install exactly two files
 
 1. Exit KSP completely before changing its files. Extract the supplied ZIP to a temporary directory. Its installable payload is only:

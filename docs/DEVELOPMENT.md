@@ -1,6 +1,6 @@
 # Development stages
 
-Current stage: **compact UI/stock-toolbar iteration ready for the next combined KSP session**. Version 0.2.1 reorganises the same planner into targets, recommended node import, clear calculation actions, compact unvalidated results, and collapsed Advanced settings. The actual `net48` addon builds against local KSP 1.12.5; 32 offline check groups and startup/reference metadata checks pass. Prior user screenshots show 0.2.0 in flight; revised UI behaviour and trajectory agreement remain unverified. No revised DLL was installed or KSP launched by this chat. Node creation is unavailable; route coverage and in-game Gates 1/2 are unchanged. See [MILESTONE-3.md](MILESTONE-3.md), [INSTALL.md](INSTALL.md), and [UI-ACCEPTANCE.md](UI-ACCEPTANCE.md).
+Current stage: **replace the estimate-driven prototype with automatic route search and node creation**. The 0.2.1 build is installed for testing, but its workflow is incomplete: it requires a supplied estimate, the screenshot shows a native burn-frame import failure, it does not validate a candidate against KSP, and it cannot create a node. Dave's requested route starts from his current Kerbin orbit with Mun assist and Minmus destination and no preparatory node. The next development work must make automatic candidate generation, full KSP validation, and explicit node creation work before asking him to repeat trajectory setup. See [SCOPE.md](SCOPE.md), [MILESTONE-3.md](MILESTONE-3.md), and [KSP-TEST.md](KSP-TEST.md).
 
 ## Development iteration procedure
 
@@ -16,33 +16,33 @@ Use this cycle for each implementation iteration. Keep each code change focused,
 
 An iteration passes only when its pre-agreed observable criteria pass. A useful failure still provides the exact build and reproducible evidence. Avoid unrelated code changes; batching multiple related in-game checks is encouraged when it saves a KSP launch. Numerical harness results, successful builds, DLL-load checks, node predictions, and flown trajectory outcomes are separate evidence; report each at the level actually observed. Do not label a result KSP-validated until it has been checked in KSP.
 
-## First implementation milestone: offline-first prototype
+## Current implementation goal: automatic Mun-to-Minmus node
 
-Begin with the useful trajectory work: build the numerical core, a repeatable offline harness, and deterministic fixtures for reachable cases, constrained misses, unsafe flybys, and invalid inputs. Implement the first bounded solver increment against those fixtures while establishing the KSP build target. This milestone requires no standalone KSP launch.
+Keep building and checking offline between game sessions, but solve the actual missing product capability. Start from the live active-vessel state, generate candidate departure times and burn geometries internally, and search the complete Kerbin-SOI -> Mun unpowered flyby -> Minmus periapsis route. A caller-supplied estimate, imported node, or hand-entered burn must not be necessary for the normal pilot flow. Preserve and expand the deterministic harness for candidate generation, route constraints, no-solution outcomes, cancellation, and regression cases.
 
-Schedule the first in-game session when the prototype has a meaningful end-to-end check: load the planner, read the active vessel and celestial data, calculate or validate a candidate, and inspect its trajectory or node as supported by the implementation. Combine the load/UI check with those trajectory checks. Use a recoverable test save and a written procedure with explicit expected results. If a narrower KSP-only uncertainty blocks progress, explain what it will resolve and bundle it with the next useful check where practical.
+Use the installed DLL and screenshot as evidence of two specific integration issues: the workflow still exposes estimate import and the native burn-frame check fails. Diagnose/fix these in development; do not tell Dave to plan another node or troubleshoot the frame conversion manually. Defer another KSP session until a recovered full candidate can be checked through KSP's patch sequence and the mod can safely add its departure node. Combine loading, calculation, validation, and insertion into one recoverable-save session with explicit pass criteria.
 
 ## Gate 1: KSP trajectory feasibility
 
-Confirm the intended KSP version and build/runtime references. Investigate an isolated patch-propagation adapter, node coordinate conversion, SOI event handling, terrain safety data, and patch limits.
+Confirm the KSP 1.12.5 build/runtime references. Resolve snapshot and native-frame conventions, KSP patch propagation, SOI event handling, terrain safety data, and patch limits using offline inspection first where possible.
 
-Exit evidence: offline fixtures cover a captured vessel state plus known burns without changing any live vessel plan. In a planned KSP session, confirm the predicted SOI events and periapsis against a created-node trajectory. Include a missing-encounter case and an incomplete-patch case in the appropriate offline or in-game checks. Record actual errors and runtime assumptions.
+Exit evidence: a live snapshot produces the same state and burn frame expected by KSP; detached propagation and KSP patch events agree for a controlled case. Include missing-encounter and incomplete-patch cases. A screenshot showing an import-frame failure is an open defect, not a passed check.
 
 ## Gate 2: One assist in a shared parent SOI
 
-Build the detached numerical core and bounded seed/refinement search for a vessel already orbiting the shared parent. Use a deliberately constructed reachable case before arbitrary live saves. Validate full three-dimensional geometry, excess-speed continuity, safe flyby, assist escape, and destination periapsis.
+Build automatic seed generation and bounded search from the active vessel state for a vessel already orbiting the shared parent. Exercise the actual intended case: vessel in Kerbin's SOI, with no existing manoeuvre node; Mun assist; Minmus destination. Search departure epochs and internally generated transfer/flyby geometries. Validate full three-dimensional geometry, excess-speed continuity, safe flyby, assist escape, destination entry, and requested periapsis.
 
-Exit evidence: one reproducible positive case confirmed by KSP, a constrained no-result case, a too-low flyby case, and an impossible or unsupported input case. A solver returning a near miss does not pass this gate.
+Exit evidence: the automatic search finds at least one reproducible route from the no-preparatory-node fixture; also cover constrained no-result, too-low flyby, invalid/unsupported inputs, cancellation, and search-bound exhaustion. Confirm a candidate against KSP before it is called validated. A solver returning a near miss does not pass this gate.
 
-## Gate 3: Departure from a parking orbit
+## Deferred work: departure from a parking orbit
 
-Add real departure SOI transitions and support the two parking-orbit route families in SCOPE.md: moon-assisted departure toward another planet, and planet-assisted travel toward a third planet. Use actual vessel inclination and eccentricity.
+Do not start this route expansion until the automatic Mun-to-Minmus route in the shared Kerbin parent SOI passes its KSP acceptance test. Parking-orbit departure toward another planet and planet-assisted interplanetary routes are later scope, not prerequisites for the user's requested route.
 
-Exit evidence: at least one reproducible KSP-confirmed case per route family, including the full departure/assist/destination patch chain. If a family needs extra burns or cannot converge reliably, document the evidence and review its scope before calling it supported.
+If later authorised and implemented, require a reproducible KSP-confirmed case for each added route family, including its full departure/assist/destination patch chain. Review feasibility evidence before claiming support.
 
 ## Gate 4: Planner UI and safe node creation
 
-Implement target selection, explicit units/defaults, search bounds, progress, cancellation, result diagnostics, and Create Node. Handle stale results, scene/vessel changes, conflicting future nodes, planning restrictions, and rollback of the newly created node on insertion failure.
+Keep the pilot flow to assist target, intercept target, and requested periapsis, with safe defaults and optional advanced constraints. The planner itself generates candidate seeds; remove node-import and manual-seed requirements. Show progress, cancellation, result events and validation state. Enable **Create Node** only for a complete KSP-validated candidate; handle stale results, scene/vessel changes, conflicting future nodes, planning restrictions, and rollback of only the newly created node on insertion failure.
 
 Exit evidence: cancellation and recalculation leave the node plan unchanged; successful insertion adds exactly one node and matches the validated candidate. The game remains responsive during a measured bounded search.
 
@@ -56,7 +56,9 @@ Exit evidence: demonstrated route families, measured search duration and accurac
 
 | Case | Required behaviour |
 | --- | --- |
+| No-node live starting state | Generates its own candidate starts; pilot does not import, create, or type a preliminary node |
 | Constructed reachable flyby | Finds a complete continuous route within configured tolerance |
+| Kerbin / Mun / Minmus live route | Finds and KSP-validates a complete route from the active orbit |
 | Parking orbit departures | Includes all required source SOI transitions |
 | Inclined/eccentric orbit | Uses actual 3D vessel state |
 | Excessive requested bending | Rejects an unsafe/impossible seed |
@@ -65,7 +67,7 @@ Exit evidence: demonstrated route families, measured search duration and accurac
 | Search budget exhausted | Says no solution found within bounds; retains search diagnostics |
 | Cancel or scene/vessel change | Stops safely with no node mutation |
 | Orbit/input/node-plan change | Invalidates stale result |
-| Existing conflicting future nodes | Refuses insertion without deleting those nodes |
+| Existing conflicting future nodes | Refuses insertion without deleting those nodes, while still allowing search from the captured current orbit |
 | Displayed patch chain too short | Reports/handles truncation; never treats it as confirmed success |
 | Long burn or imperfect execution | Separates impulsive prediction from observed execution error |
 

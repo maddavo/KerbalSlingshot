@@ -1,16 +1,17 @@
 # Solver and integration design
 
-This is the product architecture. Milestone 1 implements the detached numerical core and bounded local search. [Milestone 2](MILESTONE-2.md) connects main-thread live snapshots and explicit starting-estimate controls to that solver in a functional flight addon. General seed generation, independent live trajectory validation, and node creation remain unimplemented. Offline-feasible results retain no KSP-validation authority.
+This is the product architecture required by the clarified user workflow in [SCOPE.md](SCOPE.md). The 0.2.1 prototype has live snapshots and a local solver, but still requires a pilot-supplied estimate, has a reported native burn-frame import failure, lacks automatic seed generation and full candidate validation, and cannot create a node. Those are implementation gaps, not pilot setup requirements. Its offline-feasible results retain no KSP-validation authority.
 
 ## Components
 
 | Component | Responsibility |
 | --- | --- |
-| Planner UI | Targets, altitude, bounds, progress, result review, Create Node |
-| KSP state adapter | Snapshot vessel orbit, UT, celestial hierarchy, radii, SOIs, gravitational parameters, atmosphere/terrain data, and existing nodes |
-| Numerical core | Conic propagation, seed generation, flyby constraints, bounded optimisation, and candidate ranking |
-| KSP trajectory validator | Independently check candidate body sequence and periapsis through KSP patch calculations |
-| Node controller | Recheck freshness, translate delta-v into node coordinates, add the accepted node, and verify the inserted plan |
+| Planner UI | Assist target, destination target, periapsis altitude, understandable safety choices, automatic calculation, result review, and explicit Create Node |
+| KSP state adapter | Snapshot the live vessel orbit, UT, celestial hierarchy, radii, SOIs, gravitational parameters, atmosphere/terrain data, and existing node plan |
+| Seed generator | Create and diversify internal departure-time and burn-geometry guesses from the live snapshot; never require a pilot-created seed node |
+| Numerical core | Conic propagation, flyby constraints, bounded refinement, and candidate ranking |
+| KSP trajectory validator | Independently check the complete candidate body sequence, native burn frame, safety, and periapsis through KSP patch calculations |
+| Node controller | Recheck freshness/conflicts, add exactly one explicitly requested node, and verify the resulting KSP patch plan |
 
 The numerical core should operate on immutable numeric snapshots without Unity objects. Capture and interact with KSP/Unity state on the main thread. Only detached numerical work may run in a background worker; KSP propagation must run on the main thread in bounded batches if needed. Cancellation and a computation budget apply to every stage.
 
@@ -31,18 +32,18 @@ A pair of Lambert transfers through the assist body's centre is only a seed: ind
 
 ## Search pipeline
 
-1. **Snapshot and validate.** Check input units, supported body hierarchy, future-node conflicts, vessel planning capability, and clearance bounds. Capture a stable vessel/body state fingerprint.
-2. **Generate seeds.** Sample departure and encounter epochs within finite bounds. Use Lambert or equivalent conic transfers for approximate candidate geometry. Filter impossible excess-speed/turn-angle combinations. Include both viable flyby orientations and transfer branches rather than assuming a coplanar orbit.
+1. **Snapshot and validate.** Check the three pilot inputs, supported body hierarchy, vessel planning capability, existing node plan, and clearance bounds. Capture a stable vessel/body state fingerprint.
+2. **Generate internal seeds.** Automatically sample departure epochs and generate transfer/flyby geometry from the captured vessel state and target ephemerides. Use Lambert or equivalent conic transfers only to suggest initial candidates; filter impossible excess-speed/turn-angle combinations and vary flyby orientations/branches. A seed is never presented as a result and never requested from the pilot.
 3. **Resolve departure.** Convert approximate departure geometry into a burn from the vessel's actual orbit. A planet parking orbit requires a departure conic and finite SOI exit; moon-assisted escape must retain the moon's position within the planet's SOI.
 4. **Refine the burn.** Optimise departure UT plus three burn-vector components. Every evaluation propagates the complete supported patch sequence. Encounter epochs and flyby-plane parameters may guide a seed, but the final epochs must emerge from this propagation.
 5. **Enforce constraints.** Require the selected assist entry, safe periapsis, unbound exit, and later destination entry/periapsis. Reject unexpected encounters, collision/atmosphere paths, nonfinite states, exceeded bounds, or truncated propagation.
 6. **Validate in KSP.** Evaluate promising candidates through isolated KSP patch calculations and compare sequence, times, and periapsis. Refine or reject disagreement rather than passing it off as a valid solution.
 7. **Rank and present.** Return validated candidates ordered by departure delta-v and journey duration. Record the search budget and residuals.
-8. **Insert on request.** Recheck the fingerprint and burn time, create one node, then compare its predicted trajectory with the accepted result. If insertion fails or disagrees, remove only the node created by this operation and report the failure.
+8. **Validate, then insert on request.** Require KSP agreement on full event order, periapsis, safety bounds, and native-frame delta-v before enabling Create Node. Recheck the fingerprint and node plan. Add exactly one node after the user action, compare its resulting prediction with the accepted result, and on insertion failure remove only the node created by this operation.
 
 Encounter boundaries make the objective discontinuous: most arbitrary burns miss the assist entirely. Use staged objectives (assist approach, safe passage/exit, destination approach, destination periapsis) and multiple seeds. Penalties can guide exploration, but only explicit constraints determine validity. Start with a bounded derivative-free optimiser; algorithm and tuning choices remain a feasibility decision.
 
-The first increment uses deterministic coordinate pattern search from caller-supplied approximate burns, with finite evaluation and propagation-step budgets. It propagates finite-SOI paths for each trial and uses staged scores to guide refinement. `OfflineFeasible` means only those detached constraints passed; it is explicitly not `KspValidated`, cannot create nodes, and is not a global optimum. The harness tests known and refined routes against independent RK4 propagation. The universal-variable conic model and finite event scanner remain subject to the coverage limitations in the milestone report.
+The current increment uses deterministic coordinate pattern search from caller-supplied approximate burns, with finite evaluation and propagation-step budgets. This is an implementation limitation, not the intended user interaction. The next solver increment must automatically generate and diversify seeds from the live vessel state, then retain the existing full finite-SOI constraints. `OfflineFeasible` means only detached constraints passed; it is not `KspValidated` and cannot justify node creation. The harness tests synthetic known/refined routes against independent RK4 propagation. The universal-variable conic model and finite event scanner remain subject to the coverage limits in the milestone report.
 
 There is no guarantee that four departure variables can satisfy every chosen route and safety constraint. Search bounds, launch geometry, and available flyby bending can leave no feasible solution. The planner must expose this result honestly.
 
@@ -63,7 +64,7 @@ Do not assume copied KSP `Orbit` objects, pooled objects, or live solver data re
 
 ## Node and result lifecycle
 
-Search and preview must not create temporary live manoeuvre nodes. Existing future nodes that would change the trajectory must block insertion in the initial version; do not delete or replace them automatically. Preserve unrelated past nodes.
+Search and preview must not create temporary live manoeuvre nodes. The pilot does not need a future node as a solver seed. Existing future nodes that would change the trajectory must block insertion in the initial version; do not delete or replace them automatically. Preserve unrelated nodes and explain the conflict.
 
 A result fingerprint should include vessel identity, current conic/epoch, reference body, relevant celestial data, target selections, settings, and node-plan state. Ordinary UT advancement does not alone invalidate an unchanged conic, but a passed departure time does. Burns, SOI changes, vessel switches, node edits, docking, and changed inputs require a fresh search.
 
