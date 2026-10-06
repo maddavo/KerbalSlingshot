@@ -1,0 +1,106 @@
+{
+  "Name": "reachable tilted sibling-body route",
+  "Provenance": "Synthetic inverse-designed assist hyperbola; destination placed on outgoing conic. Frozen after construction; independent RK4 segment checks. Not a KSP save or stock-system validation.",
+  "Epoch": 0,
+  "ParentMu": 10000000000,
+  "ParentSafeRadius": 1000,
+  "ParentSoi": 100000000,
+  "VesselR": [
+    997791.7486946168,
+    -11565.660988431633,
+    -8674.245741323724
+  ],
+  "VesselV": [
+    33.94997830695955,
+    159.16205614454003,
+    118.996542108405
+  ],
+  "Bodies": [
+    {
+      "Id": "assist",
+      "Mu": 10000000,
+      "Radius": 1000,
+      "Soi": 10000,
+      "TerrainCeiling": 50,
+      "AtmosphereHeight": 0,
+      "R": [
+        1000000,
+        0,
+        0
+      ],
+      "V": [
+        0,
+        80,
+        60
+      ]
+    },
+    {
+      "Id": "destination",
+      "Mu": 1000000,
+      "Radius": 500,
+      "Soi": 5000,
+      "TerrainCeiling": 20,
+      "AtmosphereHeight": 0,
+      "R": [
+        988816.5673822706,
+        31515.451685628504,
+        23636.588764221422
+      ],
+      "V": [
+        -4.029661446097582,
+        80.27439681973611,
+        60.205797614802066
+      ]
+    }
+  ],
+  "Assist": "assist",
+  "Destination": "destination",
+  "TargetAltitude": 1445.4319443562515,
+  "MinimumAssistAltitude": 300,
+  "ClearanceMargin": 50,
+  "AltitudeTolerance": 0.1,
+  "Earliest": 0,
+  "Latest": 2,
+  "Duration": 1000,
+  "MaxDeltaV": 5,
+  "MaxStep": 10,
+  "MaxSteps": 20000,
+  "SearchBudget": 400,
+  "TimeStep": 1,
+  "VelocityStep": 0.1,
+  "Seeds": [
+    {
+      "UT": 0,
+      "DeltaV": [
+        1.05,
+        1.3840000000000001,
+        1.438
+      ]
+    }
+  ],
+  "KnownBurn": {
+    "UT": 0,
+    "DeltaV": [
+      1,
+      1.4200000000000002,
+      1.44
+    ]
+  },
+  "ExpectedSearchStatus": "OfflineFeasible",
+  "ExpectedEvaluationStatus": "OfflineFeasible",
+  "ExpectedReasonContains": "",
+  "ExpectedTimes": [
+    44.460341113397945,
+    132.7784531144307,
+    221.09656511626963,
+    477.506499531382,
+    521.309694152305
+  ],
+  "ExpectedRadii": [
+    9999.999999990916,
+    2043.4095800021319,
+    10000.000000025466,
+    4999.999999977983,
+    1945.4319443562515
+  ]
+}

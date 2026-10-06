@@ -4,7 +4,7 @@ A proposed gravity-assist manoeuvre planner for **Kerbal Space Program 1**.
 
 Choose a **Gravity Assist Target**, an **Intercept Target**, and an **Intercept Target Distance**. KerbalSlingshot will search for one departure manoeuvre that sends the active vessel through the assist body's sphere of influence (SOI), leaves it on an escape trajectory, and subsequently encounters the destination at the requested periapsis altitude.
 
-**Status: documentation and scope only.** There is no plugin, downloadable release, or validated solver yet. The intended initial compatibility target is KSP 1.12.5; compatibility must be demonstrated during implementation.
+**Status: milestone 1 offline prototype implemented.** A detached numerical core, bounded local search, five deterministic fixtures, and a repeatable harness are available. The KSP API-contract library builds for .NET Framework 4.8 against KSP 1.12.5. There is no live planner, downloadable release, or in-game trajectory validation yet.
 
 ## Intended flight sequence
 
@@ -31,12 +31,30 @@ The node describes the departure burn. Gravity and the encounter geometry produc
 
 These controls describe the planned product; they are not currently implemented. The three main selections express the goal, while bounded search settings make the calculation practical. Some requests will have no reachable solution within those bounds.
 
+## Build and offline checks
+
+With the .NET 8 SDK installed, run from the repository root:
+
+```powershell
+./check.ps1 -OfflineOnly
+```
+
+To also build the KSP contract, provide your local `KSP_x64_Data/Managed` directory:
+
+```powershell
+./check.ps1 -KspManagedPath 'C:/path/to/Kerbal Space Program/KSP_x64_Data/Managed'
+```
+
+The core targets `net48` and `net8.0`; the harness runs on .NET 8, and the KSP contract targets `net48`. Game assemblies stay outside the repository and are not copied to build outputs. These commands do not launch KSP or install a DLL. See [milestone evidence and limitations](docs/MILESTONE-1.md).
+
 ## Documentation
 
 - [Scope and requirements](docs/SCOPE.md): supported routes, inputs, exclusions, and acceptance criteria.
 - [Solver and integration design](docs/DESIGN.md): trajectory search, physical constraints, KSP validation, and node lifecycle.
 - [Development stages](docs/DEVELOPMENT.md): feasibility gates and evidence required before release.
 - [Research references](docs/REFERENCES.md): primary sources and limits of current evidence.
+- [Milestone 1 evidence](docs/MILESTONE-1.md): implemented behaviour, reproducible checks, and unresolved questions.
+- [Dependency/licence review](docs/DEPENDENCIES.md) and [fixture provenance](fixtures/README.md).
 - [Change log](CHANGELOG.md).
 
 ## Project decisions

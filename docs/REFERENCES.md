@@ -18,6 +18,6 @@ These projects demonstrate existing work in the problem domain. Their functional
 
 - Public source and the local MechJeb source were inspected for trajectory-propagation precedent.
 - The new KerbalSlingshot repository was confirmed empty before this documentation baseline.
-- No KerbalSlingshot code has been written or run, and no trajectory was solved or flown.
-- API behaviour, compatibility, numerical defaults, timing, and achievable route coverage remain development questions.
+- Milestone 1 now implements and checks detached synthetic trajectories and local bounded refinement. See [MILESTONE-1.md](MILESTONE-1.md) for the actual results and local source/API investigation.
+- KSP API calls are compiled but have not been executed in game; no trajectory was flown. Runtime compatibility, stock-system route coverage, and live validation remain development questions.
 - Review the applicable licences before reusing any implementation. No external solver code was copied for this documentation baseline.

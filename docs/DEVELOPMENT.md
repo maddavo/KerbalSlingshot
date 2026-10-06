@@ -1,6 +1,6 @@
 # Development stages
 
-Current stage: **documentation baseline**. No source, builds, installation, or flight checks have been completed for KerbalSlingshot.
+Current stage: **first offline implementation milestone complete**. The detached sibling-body core, bounded solver increment, frozen fixtures, and repeatable harness are implemented and checked. The core and KSP API contract build for `net48` against local KSP 1.12.5; the harness executes on `net8.0`. No installation or in-game checks have been performed. Gates 1 and 2 retain their in-game exit requirements. See [MILESTONE-1.md](MILESTONE-1.md) for exact evidence and limitations.
 
 ## Development iteration procedure
 
@@ -69,16 +69,16 @@ Exit evidence: demonstrated route families, measured search duration and accurac
 | Displayed patch chain too short | Reports/handles truncation; never treats it as confirmed success |
 | Long burn or imperfect execution | Separates impulsive prediction from observed execution error |
 
-## Proposed source layout once implementation begins
+## Current source layout
 
 ```text
-src/KerbalSlingshot.Core/       detached numerical model and search
-src/KerbalSlingshot.KSP/        game adapter, validator, UI, node controller
-tests/                        numerical and lifecycle validation
-fixtures/                     reproducible numeric scenarios
-docs/                         scope, design, evidence, release instructions
+src/KerbalSlingshot.Core/       detached numerical model and bounded local search
+src/KerbalSlingshot.KSP/        compile-only API contract; no live planner yet
+tests/KerbalSlingshot.Harness/  repeatable offline numerical/constraint checks
+fixtures/                     frozen synthetic scenarios and provenance
+docs/                         scope, design, evidence, dependency review
 ```
 
-No build toolchain is committed yet. Verify the game's runtime before choosing the C# target framework and reference configuration. Keep machine-specific KSP paths in ignored local configuration and reference the user's game assemblies without committing them. Record third-party licences before adding solver code or dependencies.
+The solution and build/check scripts use the .NET 8 SDK. Core targets are `net48;net8.0`; the KSP contract uses `net48` and local non-copying references. Keep machine-specific KSP paths in ignored `local.props` or pass `KspManagedPath` to the scripts. Reference the user's game assemblies without committing them. Development-only framework reference packages and source research are recorded in [DEPENDENCIES.md](DEPENDENCIES.md).
 
 These gates are project documentation, not scheduled reminders or entries in a personal task system. No calendar commitments or effort estimates are assigned.

@@ -1,6 +1,6 @@
 # Solver and integration design
 
-This is a proposed architecture, not an implemented or verified algorithm.
+This is the product architecture. Milestone 1 implements the detached sibling-body numerical core, ordered offline constraints, imported approximate seeds, and bounded coordinate pattern search. The live adapter/validator, general seed generation, UI, and node controller remain proposed. See [milestone evidence](MILESTONE-1.md) for the implementation boundary and numerical checks.
 
 ## Components
 
@@ -41,6 +41,8 @@ A pair of Lambert transfers through the assist body's centre is only a seed: ind
 8. **Insert on request.** Recheck the fingerprint and burn time, create one node, then compare its predicted trajectory with the accepted result. If insertion fails or disagrees, remove only the node created by this operation and report the failure.
 
 Encounter boundaries make the objective discontinuous: most arbitrary burns miss the assist entirely. Use staged objectives (assist approach, safe passage/exit, destination approach, destination periapsis) and multiple seeds. Penalties can guide exploration, but only explicit constraints determine validity. Start with a bounded derivative-free optimiser; algorithm and tuning choices remain a feasibility decision.
+
+The first increment uses deterministic coordinate pattern search from caller-supplied approximate burns, with finite evaluation and propagation-step budgets. It propagates finite-SOI paths for each trial and uses staged scores to guide refinement. `OfflineFeasible` means only those detached constraints passed; it is explicitly not `KspValidated`, cannot create nodes, and is not a global optimum. The harness tests known and refined routes against independent RK4 propagation. The universal-variable conic model and finite event scanner remain subject to the coverage limitations in the milestone report.
 
 There is no guarantee that four departure variables can satisfy every chosen route and safety constraint. Search bounds, launch geometry, and available flyby bending can leave no feasible solution. The planner must expose this result honestly.
 

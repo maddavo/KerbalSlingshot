@@ -1,6 +1,6 @@
 # Mod scope
 
-Scope baseline: 5 October 2026. This document proposes the initial product boundaries; implementation and flight validation are still outstanding.
+Scope baseline: 5 October 2026. These are the agreed product boundaries. Milestone 1 implements a detached sibling-body prototype; live integration, other route families, and flight validation remain outstanding. See [milestone evidence](MILESTONE-1.md).
 
 ## Goal
 

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net48</TargetFramework></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <ProjectReference Include="../KerbalSlingshot.Core/KerbalSlingshot.Core.csproj" />
+    <Reference Include="Assembly-CSharp"><HintPath>$(KspManagedPath)/Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(KspManagedPath)/Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(KspManagedPath)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <Target Name="RequireKspReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(KspManagedPath)/Assembly-CSharp.dll')" Text="Set KspManagedPath to your KSP 1.12.5 KSP_x64_Data/Managed directory (local.props or -p:KspManagedPath)." />
+  </Target>
+</Project>
