@@ -2,31 +2,31 @@
 
 Current stage: **documentation baseline**. No source, builds, installation, or flight checks have been completed for KerbalSlingshot.
 
-## DLL development iteration procedure
+## Development iteration procedure
 
-Use this cycle for each in-game development iteration. Keep the iteration small enough that its test result can be attributed to a specific change.
+Use this cycle for each implementation iteration. Keep each code change focused, but batch compatible in-game checks into an occasional KSP session. A successful build or offline test is useful evidence; it is not evidence that the plugin loads or that KSP predicts the same trajectory.
 
 1. **Agree on the question.** State the behaviour being added or investigated, its reason, and the change's boundaries. Check any scope change against [SCOPE.md](SCOPE.md).
-2. **Write the test before implementation.** Record the KSP version, required mods, test save/vessel and starting state, exact steps, expected result, pass/fail criteria, and useful evidence to capture if it fails. Use a disposable or recoverable save when a test changes flight state.
-3. **Implement and build.** Make the agreed change, report build errors, and produce a clearly identified DLL. Record the commit, build configuration, KSP/runtime target, DLL version or build ID, and SHA-256. Do not hand over a DLL that did not build successfully.
-4. **Install while KSP is closed.** Confirm the game has exited, preserve the installed working DLL for rollback, then replace only KerbalSlingshot's files. Record the installed path and verify that the installed DLL's SHA-256 matches the build artifact. Never overwrite another mod's files.
-5. **Run the written test.** Follow the agreed steps and criteria with the identified build. Capture the observed outcome and any requested screenshot or relevant `KSP.log` excerpt. Keep the save unchanged unless the test explicitly uses its disposable copy.
-6. **Report the evidence.** Return the build ID/hash, test case, expected and observed behaviour, pass/fail result, and evidence. Distinguish a test failure from an inconclusive run, such as a different DLL being loaded or a missing prerequisite.
-7. **Choose the next iteration.** Compare the result with the criteria. Fix, simplify, or roll back as evidence supports, then define the next question and test. Preserve the last known-good DLL until its replacement passes the relevant smoke test.
+2. **Choose the cheapest useful check.** Add offline numerical fixtures or harness checks for orbital maths, optimisation, and failure cases. Build against the intended KSP references. Specify an in-game test only when it answers a question that offline checks cannot, such as actual API behaviour, plugin loading, patch propagation, or node insertion.
+3. **Write any in-game test before implementation.** When a KSP session is warranted, record the game version, required mods, test save/vessel and starting state, exact steps, expected result, pass/fail criteria, and evidence to capture. Group related checks into one session. Use a disposable or recoverable save when a test changes flight state.
+4. **Implement and build.** Make the agreed change, report build errors, and produce a clearly identified DLL. Record the commit, build configuration, KSP/runtime target, DLL version or build ID, and SHA-256. Do not hand over a DLL that did not build successfully.
+5. **Install for the planned KSP session.** When an in-game test is ready, confirm KSP has exited, preserve the installed working DLL for rollback, then replace only KerbalSlingshot's files. Record the installed path and verify that the installed DLL's SHA-256 matches the build artifact. Never overwrite another mod's files.
+6. **Run and report.** Perform the planned checks with the identified build. Capture the observed outcome and requested evidence. Report build ID/hash, test case, expected versus observed behaviour, and pass/fail status. Distinguish failure from an inconclusive run, such as a different DLL being loaded or a missing prerequisite. Keep saves unchanged unless a test explicitly uses a disposable copy.
+7. **Choose the next iteration.** Compare results with the criteria. Fix, simplify, or roll back as evidence supports, then define the next question and checks. Preserve the last known-good DLL until its replacement passes the relevant checks.
 
-An iteration passes only when its pre-agreed observable criteria pass. A useful failure still provides the exact build and reproducible evidence. Do not bundle unrelated changes into a test intended to isolate one behaviour. Numerical harness results, successful builds, DLL-load checks, node predictions, and flown trajectory outcomes are separate evidence; report each at the level actually observed.
+An iteration passes only when its pre-agreed observable criteria pass. A useful failure still provides the exact build and reproducible evidence. Avoid unrelated code changes; batching multiple related in-game checks is encouraged when it saves a KSP launch. Numerical harness results, successful builds, DLL-load checks, node predictions, and flown trajectory outcomes are separate evidence; report each at the level actually observed. Do not label a result KSP-validated until it has been checked in KSP.
 
-## First in-game iteration: load and observe
+## First implementation milestone: offline-first prototype
 
-Before attempting trajectory solving, build a minimal plugin and check that it loads in the agreed KSP version, opens its planner, and displays the active vessel and selected celestial bodies. It must not change the vessel, create a manoeuvre node, or mutate the save. This smoke test validates the game integration boundary before trajectory calculations become a second possible source of failure.
+Begin with the useful trajectory work: build the numerical core, a repeatable offline harness, and deterministic fixtures for reachable cases, constrained misses, unsafe flybys, and invalid inputs. Implement the first bounded solver increment against those fixtures while establishing the KSP build target. This milestone requires no standalone KSP launch.
 
-Write the concrete setup and pass criteria after the initial plugin entry point and UI are known. At minimum, pass means the expected DLL is identified in the log, the planner opens, vessel and body names match the current game state, and no node or save-state change occurs. The exact log signature and menu access steps must be specified by that build's test procedure, not guessed in advance.
+Schedule the first in-game session when the prototype has a meaningful end-to-end check: load the planner, read the active vessel and celestial data, calculate or validate a candidate, and inspect its trajectory or node as supported by the implementation. Combine the load/UI check with those trajectory checks. Use a recoverable test save and a written procedure with explicit expected results. If a narrower KSP-only uncertainty blocks progress, explain what it will resolve and bundle it with the next useful check where practical.
 
 ## Gate 1: KSP trajectory feasibility
 
 Confirm the intended KSP version and build/runtime references. Investigate an isolated patch-propagation adapter, node coordinate conversion, SOI event handling, terrain safety data, and patch limits.
 
-Exit evidence: a captured vessel state plus a known burn can be propagated without changing the live vessel plan; the predicted SOI events and periapsis agree with KSP's created-node trajectory. Include a missing-encounter case and an incomplete-patch case. Record actual errors and runtime assumptions.
+Exit evidence: offline fixtures cover a captured vessel state plus known burns without changing any live vessel plan. In a planned KSP session, confirm the predicted SOI events and periapsis against a created-node trajectory. Include a missing-encounter case and an incomplete-patch case in the appropriate offline or in-game checks. Record actual errors and runtime assumptions.
 
 ## Gate 2: One assist in a shared parent SOI
 
