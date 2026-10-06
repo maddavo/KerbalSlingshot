@@ -1,4 +1,5 @@
 using KerbalSlingshot.Core;
+using UnityEngine;
 
 namespace KerbalSlingshot.KSP
 {
@@ -23,13 +24,33 @@ namespace KerbalSlingshot.KSP
 
         public static BurnFrame ReadBurnFrame(Orbit orbit,double ut)
         {
-            Vector3d prograde=orbit.getOrbitalVelocityAtUT(ut).xzy.normalized;
-            Vector3d radial=orbit.getRelativePositionAtUT(ut).xzy.normalized;
-            radial=(radial-prograde*Vector3d.Dot(radial,prograde)).normalized;
-            // Native node's positive normal axis, including KSP world-axis ordering.
-            Vector3d normal=orbit.GetOrbitNormal().xzy.normalized;
-            return new BurnFrame(ToCore(Planetarium.Zup.WorldToLocal(radial)),
-                ToCore(Planetarium.Zup.WorldToLocal(normal)),ToCore(Planetarium.Zup.WorldToLocal(prograde)));
+            orbit.GetOrbitalStateVectorsAtUT(ut,out Orbit.State state);
+            QuaternionD rotation=QuaternionD.LookRotation(state.vel.xzy,Vector3d.Cross(-state.pos.xzy,state.vel.xzy));
+            V3 Axis(Vector3d axis) => ToCore(Planetarium.Zup.WorldToLocal((rotation*axis).xzy));
+            var frame=new BurnFrame(Axis(new Vector3d(1,0,0)),Axis(new Vector3d(0,1,0)),Axis(new Vector3d(0,0,1)));
+            BurnFrame reference=NativeFrame.FromFixed(new State(ToCore(state.pos),ToCore(state.vel)),
+                v=>ToCore(Planetarium.Zup.WorldToLocal(ToNative(v))));
+            if((frame.Radial-reference.Radial).Length>1e-8 || (frame.Normal-reference.Normal).Length>1e-8 ||
+                (frame.Prograde-reference.Prograde).Length>1e-8) throw new System.InvalidOperationException("Native quaternion frame disagrees with fixed-axis reference");
+            return frame;
+        }
+
+        public static Vector3d ToNative(V3 v) => new Vector3d(v.X,v.Y,v.Z);
+
+        public static Orbit BurnOrbit(Orbit source,Burn burn,out V3 components,out double roundTripError)
+        {
+            components=ReadBurnFrame(source,burn.UT).ToComponents(burn.DeltaV);
+            source.GetOrbitalStateVectorsAtUT(burn.UT,out Orbit.State state);
+            QuaternionD rotation=QuaternionD.LookRotation(state.vel.xzy,Vector3d.Cross(-state.pos.xzy,state.vel.xzy));
+            Vector3d fixedDelta=(rotation*ToNative(components)).xzy;
+            var initial=new Orbit(); initial.UpdateFromFixedVectors(state.pos,state.vel,source.referenceBody,burn.UT);
+            var after=new Orbit(); after.UpdateFromFixedVectors(state.pos,state.vel+fixedDelta,source.referenceBody,burn.UT);
+            var probe=new ManeuverNode { UT=burn.UT,DeltaV=ToNative(components),patch=initial,nextPatch=after };
+            // GetBurnVector is a raw Z-up patch-velocity difference, then swapped to world order.
+            V3 actual=ToCore(probe.GetBurnVector(initial).xzy);
+            roundTripError=(actual-burn.DeltaV).Length;
+            after.StartUT=burn.UT;
+            return after;
         }
 
         public static double ReadPeriapsisAltitude(Orbit orbit) => orbit.PeA;

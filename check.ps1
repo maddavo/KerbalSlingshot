@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
 try {
     & ./build.ps1 -KspManagedPath $KspManagedPath -OfflineOnly:$OfflineOnly
-    $before = Get-ChildItem fixtures -Filter '*.json' | Get-FileHash -Algorithm SHA256
+    $before = Get-ChildItem fixtures -Filter '*.json' -Recurse | Get-FileHash -Algorithm SHA256
     dotnet run --project tests/KerbalSlingshot.Harness -c Release --no-build -- fixtures
     if ($LASTEXITCODE -ne 0) { throw 'Offline checks failed' }
     if (!$OfflineOnly) {
@@ -14,7 +14,7 @@ try {
         dotnet run --project tests/KerbalSlingshot.Harness -c Release --no-build -- --inspect-plugin src/KerbalSlingshot.KSP/bin/Release/net48/KerbalSlingshot.KSP.dll $KspManagedPath | Tee-Object -FilePath artifacts/plugin-inspection.txt
         if ($LASTEXITCODE -ne 0) { throw 'Plugin startup/reference metadata inspection failed' }
     }
-    $after = Get-ChildItem fixtures -Filter '*.json' | Get-FileHash -Algorithm SHA256
+    $after = Get-ChildItem fixtures -Filter '*.json' -Recurse | Get-FileHash -Algorithm SHA256
     if (Compare-Object ($before | ForEach-Object { $_.Path + $_.Hash }) ($after | ForEach-Object { $_.Path + $_.Hash })) {
         throw 'Checks modified frozen fixtures'
     }

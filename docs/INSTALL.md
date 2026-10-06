@@ -1,6 +1,6 @@
 # Prototype installation and rollback
 
-Target: **KSP 1.12.5**, stock patched conics, no Principia. This is a private/local test package, not a published release. Assembly version: **0.2.1.0**. The package's `build-manifest.json` identifies the exact clean source commit and SHA-256 of every built DLL. `package-files.json` identifies the packaged copies. Revised UI/toolbar behaviour and trajectory agreement await the combined test.
+Target: **KSP 1.12.5**, stock patched conics, no Principia. This is a private/local test package, not a published release. Assembly version: **0.3.0.0**. The package manifest identifies the clean source commit and exact DLL hashes. Automatic search, KSP prediction agreement and guarded insertion await the combined test. **Do not install yet: Dave has held installation until he advises KSP is closed and asks to proceed.** Preserve the installed 0.2.1 files outside GameData at that future boundary.
 
 **Important:** version 0.2.1 is an interim prototype and does not perform the requested automatic planning workflow. It requires a supplied estimate, has a reported node-import frame-check failure, does not validate candidates against KSP, and cannot create nodes. Do not ask the pilot to prepare or import a manoeuvre node to compensate. Use this installation only for development diagnosis or rollback; the user acceptance procedure applies to a later package that implements automatic search and node creation.
 
@@ -27,7 +27,7 @@ Target: **KSP 1.12.5**, stock patched conics, no Principia. This is a private/lo
    Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\GameData\KerbalSlingshot\Plugins\KerbalSlingshot.Core.dll', 'C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\GameData\KerbalSlingshot\Plugins\KerbalSlingshot.KSP.dll'
    ```
 
-6. Launch KSP using a copied/recoverable save for **UI-ACCEPTANCE.md** (and KSP-TEST.md if comparing trajectories). In flight/map view, the **stock toolbar planet/flyby icon** opens the planner; there is no floating Slingshot button. The short title shows version; Details/log/diagnostics retain exact revision. A successful build or matching installed hash does not establish revised UI behaviour or trajectory agreement.
+6. Once installation is authorised, use the recoverable no-node flight in **AUTOMATIC-HANDOFF.md / KSP-TEST.md**. The stock toolbar opens the planner. Select Mun/Minmus/periapsis, then Find Trajectory; do not create/import/type a starting burn. Create Node is available only after runtime validation. Matching file hashes do not establish a KSP pass.
 
 ## Roll back
 

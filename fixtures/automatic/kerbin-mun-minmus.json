@@ -1,0 +1,97 @@
+{
+  "Name": "Automatic stock-scale Kerbin Mun Minmus, 80 km orbit, 6 degree destination",
+  "Provenance": "Stock-scale masses/radii and circular 80 km vessel orbit; destination phase inverse-designed for a generated safe flyby. Not a captured live game state.",
+  "Epoch": 0,
+  "ParentMu": 3531600000000,
+  "ParentSafeRadius": 671000,
+  "ParentSoi": 84159286,
+  "VesselR": [
+    680000,
+    0,
+    0
+  ],
+  "VesselV": [
+    0,
+    2278.931638238564,
+    0
+  ],
+  "Bodies": [
+    {
+      "Id": "Mun",
+      "Mu": 65138398000,
+      "Radius": 200000,
+      "Soi": 2429559,
+      "TerrainCeiling": 10000,
+      "AtmosphereHeight": 0,
+      "R": [
+        12000000,
+        0,
+        0
+      ],
+      "V": [
+        0,
+        542.4942396007538,
+        0
+      ]
+    },
+    {
+      "Id": "Minmus",
+      "Mu": 1765800000,
+      "Radius": 60000,
+      "Soi": 2247428,
+      "TerrainCeiling": 10000,
+      "AtmosphereHeight": 0,
+      "R": [
+        4684841.301408745,
+        46650597.848263085,
+        3282374.5033529955
+      ],
+      "V": [
+        -271.76632403353824,
+        28.791920191723733,
+        -21.319380499584874
+      ]
+    }
+  ],
+  "Assist": "Mun",
+  "Destination": "Minmus",
+  "TargetAltitude": 30000,
+  "MinimumAssistAltitude": 20000,
+  "ClearanceMargin": 1000,
+  "AltitudeTolerance": 100,
+  "Earliest": 600,
+  "Latest": 87000,
+  "Duration": 1200000,
+  "MaxDeltaV": 2000,
+  "MaxStep": 300,
+  "MaxSteps": 30000,
+  "SearchBudget": 6000,
+  "TimeStep": 1,
+  "VelocityStep": 0.2,
+  "Seeds": [],
+  "KnownBurn": {
+    "UT": 22200,
+    "DeltaV": [
+      949.642386476625,
+      127.05216962487566,
+      0
+    ]
+  },
+  "ExpectedSearchStatus": "OfflineFeasible",
+  "ExpectedEvaluationStatus": "Rejected",
+  "ExpectedReasonContains": "outside tolerance",
+  "ExpectedTimes": [
+    31955.27209519159,
+    35412.34590015867,
+    38869.419705125605,
+    118502.16504868129,
+    125166.75442807774
+  ],
+  "ExpectedRadii": [
+    2429558.9999998696,
+    693540.9095301819,
+    2429558.9999999152,
+    2247428.0000001085,
+    94351.28009304019
+  ]
+}

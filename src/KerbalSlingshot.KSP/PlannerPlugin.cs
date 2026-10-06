@@ -21,7 +21,7 @@ namespace KerbalSlingshot.KSP
         private readonly RevisionGate gate=new RevisionGate();
         private string[] bodyIds=Array.Empty<string>();
         private string context="Read the active vessel to choose its sibling bodies.";
-        private string status="Starting estimates are not solutions. No node creation in this prototype.";
+        private string status="Select Mun, Minmus and periapsis, then Find Trajectory.";
         private string report="",patchReport="";
         private int assistIndex,destinationIndex;
         private bool visible,terrainConfirmed;
@@ -30,9 +30,13 @@ namespace KerbalSlingshot.KSP
         private Job? job;
         private CapturedPlan? displayedPlan;
         private Burn? displayedBurn;
+        private Evaluation? candidateEvaluation;
+        private ValidationResult? validation;
+        private V3 validatedComponents;
+        private bool nodeCreated;
         private string contextVessel="",contextParent="";
         private static readonly CultureInfo Invariant=CultureInfo.InvariantCulture;
-        private static string Build => typeof(PlannerPlugin).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.2.1";
+        private static string Build => typeof(PlannerPlugin).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.3.0";
         private static string Vector(V3 v) => "("+SnapshotAdapter.F(v.X)+","+SnapshotAdapter.F(v.Y)+","+SnapshotAdapter.F(v.Z)+")";
 
         private sealed class Progress
@@ -57,6 +61,9 @@ namespace KerbalSlingshot.KSP
 
         public void Start()
         {
+            fields["Departure +/- s"]="86400"; fields["Journey limit s"]="1200000";
+            fields["Evaluations"]="6000"; fields["Wall budget s"]="120";
+            fields["Time step s"]="1080"; fields["DV step m/s"]="20";
             Debug.Log("[KerbalSlingshot] Flight planning plugin "+Build+"; KSP validation pending; node creation unavailable.");
             window.x=Math.Max(20,Screen.width-PlannerLayout.Width-320);
             GameEvents.onGUIApplicationLauncherReady.Add(EnsureToolbar);
@@ -83,7 +90,7 @@ namespace KerbalSlingshot.KSP
         }
         private void Invalidate(string reason)
         {
-            gate.Invalidate(); AbandonJob(); displayedPlan=null; displayedBurn=null; resultCard=null; report=""; patchReport=""; status=reason;
+            gate.Invalidate(); AbandonJob(); displayedPlan=null; displayedBurn=null; candidateEvaluation=null; validation=null; nodeCreated=false; resultCard=null; report=""; patchReport=""; status=reason;
         }
         private void Try(Action action)
         {
@@ -96,59 +103,32 @@ namespace KerbalSlingshot.KSP
         }
         private void ReadContext()
         {
-            Invalidate("Vessel/body list refreshed. Enter or import a starting estimate.");
+            Invalidate("Ready for automatic Mun-to-Minmus search.");
             Vessel v=SnapshotAdapter.Active();
             CelestialBody parent=v.orbit.referenceBody;
             bodyIds=SnapshotAdapter.Children(parent).Select(b=>b.bodyName).ToArray();
             terrainConfirmed=false;
-            estimateReady=false; estimateSource="No estimate imported";
+            terrainConfirmed=true;
             contextVessel=v.id.ToString(); contextParent=parent.bodyName;
-            assistIndex=0; destinationIndex=bodyIds.Length>1?1:0;
+            assistIndex=Math.Max(0,Array.IndexOf(bodyIds,"Mun")); destinationIndex=Math.Max(0,Array.IndexOf(bodyIds,"Minmus"));
             double now=Planetarium.GetUniversalTime();
             fields["Departure UT"]=SnapshotAdapter.F(now+600);
             context=v.vesselName+" | parent "+parent.bodyName+" | captured UT "+SnapshotAdapter.F(now)+" | children "+bodyIds.Length;
             if (bodyIds.Length<2) status="Unsupported route: this parent has fewer than two direct children. Parking-orbit departures/planetary escape are not supported.";
         }
-        private void ImportNode()
+        private void BeginAutomatic()
         {
-            ManeuverNode node=SnapshotAdapter.SingleFutureNode();
-            Invalidate("Imported existing node as an estimate only. Native frame check passed; KSP trajectory validation still pending.");
-            fields["Departure UT"]=SnapshotAdapter.F(node.UT);
-            fields["Radial m/s"]=SnapshotAdapter.F(node.DeltaV.x);
-            fields["Normal m/s"]=SnapshotAdapter.F(node.DeltaV.y);
-            fields["Prograde m/s"]=SnapshotAdapter.F(node.DeltaV.z);
-            estimateReady=true; estimateSource="Existing node imported"; manualOpen=false;
-        }
-        private void Begin(bool refine)
-        {
-            Vessel v=SnapshotAdapter.Active();
-            if (v.id.ToString()!=contextVessel || v.orbit.referenceBody.bodyName!=contextParent)
-                throw new ArgumentException("Vessel/parent changed: read vessel / bodies again");
-            if (bodyIds.Length<2) throw new ArgumentException("Unsupported shared-parent route");
+            Vessel vessel=SnapshotAdapter.Active();
+            if(vessel.id.ToString()!=contextVessel || vessel.orbit.referenceBody.bodyName!=contextParent)
+                throw new ArgumentException("Vessel/parent changed: refresh before searching");
             PlannerSettings settings=PlannerSettings.Parse(fields);
             CapturedPlan plan=SnapshotAdapter.Capture(settings,bodyIds[assistIndex],bodyIds[destinationIndex],terrainConfirmed);
-            Invalidate(refine?"Refining a starting estimate...":"Evaluating the exact starting estimate...");
-            int revision=gate.Invalidate();
-            var next=new Job(plan,settings,revision,refine);
-            job=next;
+            Invalidate("Automatic search running...");
+            var next=new Job(plan,settings,gate.Invalidate(),true); job=next;
             next.Cancellation.CancelAfter(TimeSpan.FromSeconds(settings.WallSeconds));
-            // Only detached numeric state and cancellation/progress primitives enter the worker.
-            next.Work=Task.Run(()=>
-            {
-                if (refine)
-                    return Search.Solve(plan.Request,new[]{plan.Seed},settings.Budget,settings.TimeStep,settings.VelocityStep,
-                        next.Cancellation.Token,(count,reason)=>Volatile.Write(ref next.Progress,new Progress(count,reason)));
-                Evaluation evaluation=NumericalTrajectory.Evaluate(plan.Request,plan.Seed,next.Cancellation.Token);
-                Volatile.Write(ref next.Progress,new Progress(1,evaluation.Reason));
-                SearchStatus resultStatus=evaluation.Status==EvaluationStatus.OfflineFeasible?SearchStatus.OfflineFeasible:
-                    evaluation.Status==EvaluationStatus.Cancelled?SearchStatus.Cancelled:
-                    evaluation.Status==EvaluationStatus.InvalidInput?SearchStatus.InvalidInput:SearchStatus.NoSolutionFoundWithinBounds;
-                bool feasible=evaluation.Status==EvaluationStatus.OfflineFeasible;
-                return new SearchResult(resultStatus,evaluation.Reason,feasible?(Burn?)plan.Seed:null,
-                    feasible?evaluation:null,1,new Dictionary<string,int>{{evaluation.Reason,1}},plan.Seed,evaluation);
-            });
+            next.Work=Task.Run(()=>AutomaticSearch.Solve(plan.Request,settings.Budget,next.Cancellation.Token,
+                (count,reason)=>Volatile.Write(ref next.Progress,new Progress(count,reason)),settings.TimeStep,settings.VelocityStep));
         }
-
         public void Update()
         {
             if (Time.realtimeSinceStartup-lastFreshness>.5f)
@@ -176,11 +156,15 @@ namespace KerbalSlingshot.KSP
                 if (!SnapshotAdapter.Fresh(finished.Plan,burn?.UT)) { Invalidate("Completed work is stale; recalculate."); return; }
                 displayedPlan=finished.Plan; displayedBurn=burn;
                 resultCard=new PlannerResultCard(result,finished.Plan.Request,finished.Refine);
+                candidateEvaluation=result.Status==SearchStatus.OfflineFeasible?result.Evaluation:null;
+                if(candidateEvaluation!=null && displayedBurn.HasValue)
+                    validation=KspRouteValidator.Validate(finished.Plan,displayedBurn.Value,candidateEvaluation,out validatedComponents);
                 if (result.Status==SearchStatus.Cancelled)
-                    status="Wall budget exhausted: no solution found within bounds. Recalculate with suitable bounds/estimate.";
+                    status="Wall budget exhausted: no solution found within bounds. See search limits in Advanced.";
                 else if (result.Status==SearchStatus.OfflineFeasible)
-                    status="OFFLINE-FEASIBLE PREDICTION — KSP validation pending. Node creation unavailable. "+result.Message;
+                    status="OFFLINE-FEASIBLE PREDICTION — KSP validation pending.  "+result.Message;
                 else status=finished.Refine?result.Message:"Estimate rejected: "+result.Message;
+                if(validation!=null) status=validation.Passed?"KSP-VALIDATED full route. Review, then Create Node.":"Node disabled: "+validation.Reason;
                 report=Describe(finished,result);
                 Debug.Log("[KerbalSlingshot] "+report);
             }
@@ -195,7 +179,7 @@ namespace KerbalSlingshot.KSP
             text.AppendLine("Build "+Build+" | "+status);
             text.AppendLine(plan.VesselName+" ["+plan.VesselId+"] | parent "+plan.ParentId+" | snapshot UT "+SnapshotAdapter.F(plan.Request.Epoch));
             text.AppendLine("Route "+plan.Request.Assist+" -> "+plan.Request.Destination+" | target Pe "+SnapshotAdapter.F(plan.Request.TargetAltitude/1000)+" km");
-            text.AppendLine("Starting estimate UT "+SnapshotAdapter.F(plan.Seed.UT)+" | inertial DV "+Vector(plan.Seed.DeltaV));
+            text.AppendLine("Automatic departure interval UT "+SnapshotAdapter.F(plan.Request.Earliest)+" to "+SnapshotAdapter.F(plan.Request.Latest));
             text.AppendLine("Evaluations "+result.Evaluations+" / "+completed.Settings.Budget+" | elapsed "+completed.Timer.Elapsed.TotalSeconds.ToString("F3",Invariant)+" s");
             foreach (var field in fields) text.AppendLine(field.Key+" = "+field.Value);
             if (plan.CappedParent) text.AppendLine("Central parent infinite SOI replaced by a documented numeric limit of 1e15 m.");
@@ -220,12 +204,41 @@ namespace KerbalSlingshot.KSP
                     text.AppendLine("Destination Pe error "+SnapshotAdapter.F(evaluation.DestinationAltitude.Value-plan.Request.TargetAltitude)+" m; tolerance "+SnapshotAdapter.F(plan.Request.AltitudeTolerance)+" m");
             }
             foreach (var pair in result.Rejections) text.AppendLine("Rejection: "+pair.Key+" = "+pair.Value);
-            text.AppendLine("KSP-validated = false. No live node was created/edited/deleted.");
+            text.AppendLine("KSP-validated = "+(validation?.Passed==true)+"; calculation has not modified the live node plan.");
+            text.AppendLine("Runtime KSP validation: "+(validation==null?"not attempted":validation.Passed+" — "+validation.Reason));
+            if(validation!=null) foreach(EncounterEvent ev in validation.Events)
+                text.AppendLine("KSP event "+ev.Body+" "+ev.Kind+" UT="+SnapshotAdapter.F(ev.UT)+" radius="+SnapshotAdapter.F(ev.RelativeState.R.Length)+" speed="+SnapshotAdapter.F(ev.RelativeState.V.Length));
             return text.ToString();
+        }
+
+        private void CreateNode()
+        {
+            if(job!=null || displayedPlan==null || !displayedBurn.HasValue || candidateEvaluation==null || validation?.Passed!=true)
+                throw new InvalidOperationException("No current fully KSP-validated candidate");
+            ValidationResult inserted=KspRouteValidator.Insert(displayedPlan,displayedBurn.Value,candidateEvaluation,validatedComponents);
+            string evidence=report+"\n"+inserted.Reason;
+            PlannerResultCard? previous=resultCard;
+            Invalidate(inserted.Reason); report=evidence;
+            if(inserted.Passed) { resultCard=previous; nodeCreated=true; }
+            Debug.Log("[KerbalSlingshot] "+inserted.Reason);
+        }
+
+        private bool CanCreateCurrent()
+        {
+            if(validation?.Passed!=true || displayedPlan==null || !displayedBurn.HasValue || candidateEvaluation==null) return false;
+            try { return NodeAuthorization.Allowed(validation.Passed,SnapshotAdapter.Fresh(displayedPlan,displayedBurn.Value.UT),KspRouteValidator.HasFutureNodes(SnapshotAdapter.Active()),job!=null); }
+            catch(Exception) { return false; }
         }
 
         private void ReadPatches()
         {
+            Vessel active=SnapshotAdapter.Active();
+            int future=active.patchedConicSolver==null?0:active.patchedConicSolver.maneuverNodes.Count(n=>n.UT>Planetarium.GetUniversalTime());
+            if(future!=1)
+            {
+                patchReport="No single existing future node to inspect. Automatic validation uses temporary patches; no preliminary node is needed.";
+                return;
+            }
             ManeuverNode node=SnapshotAdapter.SingleFutureNode();
             var text=new StringBuilder("EXISTING NODE KSP PATCHES (not validation of a refined candidate)\n");
             text.AppendLine("Node UT "+SnapshotAdapter.F(node.UT)+" | native DV "+node.DeltaV);

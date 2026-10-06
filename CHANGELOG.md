@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### 0.3.0 — automatic Mun-to-Minmus planning and guarded departure node
+
+- Generated/refined internal departure and 3D flyby seeds; removed import/manual-burn setup from normal pilot UI.
+- Matched installed KSP fixed-vector/quaternion conventions and added disposable native round-trip validation.
+- Added temporary complete-patch validation, conflict/freshness/safety gates, explicit one-node creation, actual plan verification and operation-only rollback.
+- Added stock-scale 80 km/6-degree Minmus automatic fixture and regression checks; 40 offline groups pass. Live KSP evidence remains pending.
+- Built/packaged only authored DLLs. Installation is held at Dave's explicit request; no installed file, save, burn or warp state was changed.
+
 ### 2026-10-06 — corrected automatic-planning requirement
 
 - Clarified that the pilot selects assist body, destination body, and destination periapsis; the mod must generate its own candidate burns and create a validated departure node.

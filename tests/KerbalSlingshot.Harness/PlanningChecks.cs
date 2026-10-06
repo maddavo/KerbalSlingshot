@@ -24,7 +24,7 @@ internal static class PlanningChecks
         check("planning input rejects ambiguity, nonfinite values and unbounded work",()=>
         {
             foreach ((string key,string value) in new[]{("Departure UT","NaN"),("Radial m/s","Infinity"),("Intercept Pe km","1,5"),
-                ("Journey limit s","0"),("Scan steps","2.5"),("Evaluations","2001"),("Wall budget s","121"),
+                ("Journey limit s","0"),("Scan steps","2.5"),("Evaluations","20001"),("Wall budget s","121"),
                 ("Clearance km","-1"),("Terrain ceiling km","1e308")})
             {
                 var fields=PlannerSettings.Defaults(); fields[key]=value;

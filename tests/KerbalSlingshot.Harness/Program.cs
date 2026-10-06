@@ -4,6 +4,17 @@ using KerbalSlingshot.Core;
 using KerbalSlingshot.Harness;
 
 CultureInfo.CurrentCulture=CultureInfo.InvariantCulture;
+if(args.Length==2 && args[0]=="--construct-stock") { AutomaticChecks.ConstructStock(args[1]); return; }
+if(args.Length==2 && args[0]=="--automatic-fixture")
+{
+    Fixture f=Fixture.Read(args[1]);
+    var timer=System.Diagnostics.Stopwatch.StartNew();
+    SearchResult r=AutomaticSearch.Solve(f.Request(),6000,default,(count,reason)=> { if(count%200==0) Console.WriteLine(count+" "+reason); });
+    Console.WriteLine(r.Status+" "+r.Evaluations+" elapsed="+timer.Elapsed+" altitude="+r.Evaluation?.DestinationAltitude);
+    if(r.DiagnosticEvaluation!=null) Console.WriteLine(r.DiagnosticEvaluation.Reason+" score="+r.DiagnosticEvaluation.Score+" events="+r.DiagnosticEvaluation.Events.Count);
+    Environment.ExitCode=r.Status==SearchStatus.OfflineFeasible?0:1;
+    return;
+}
 if (args.Length==3 && args[0]=="--inspect-plugin")
 {
     PackageInspection.Check(args[1],args[2]);
@@ -177,6 +188,7 @@ Check("unexpected grazing SOI entry between scan endpoints",()=>
 });
 PlanningChecks.Run(directory,Check);
 PresentationChecks.Run(directory,Check);
+AutomaticChecks.Run(directory,Check);
 Directory.CreateDirectory("artifacts");
 File.WriteAllText("artifacts/offline-results.json",JsonSerializer.Serialize(new { Passed=passed,Failed=failed,Fixtures=report },Fixture.JsonOptions));
 Console.WriteLine($"Checks: {passed} passed, {failed} failed. KSP checks: not run.");

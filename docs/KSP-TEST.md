@@ -2,11 +2,15 @@
 
 This is the required user workflow for the next functional implementation. **Do not run this procedure against 0.2.1:** that prototype requires an estimate, reports a native burn-frame import failure, does not validate a candidate against KSP, and cannot create nodes. It is not Dave's job to prepare a Mun flyby node to make the planner testable.
 
+Use the **0.3.0** package only after Dave releases his installation hold. [AUTOMATIC-HANDOFF.md](AUTOMATIC-HANDOFF.md) supplies the exact default bounds and concise combined steps. Existing Space Camp (~80 km Kerbin orbit) is the intended live capture; its celestial phase is not the constructed offline fixture, so no live convergence/pass is promised without testing. No preparatory node is setup.
+
 ## Test setup
 
 Use KSP 1.12.5 with stock patched conics and without Principia. Use a recoverable copy of a save with a coasting active vessel in Kerbin's SOI, outside Mun's and Minmus's SOIs. Start with **no manoeuvre nodes**. Record game version, loaded mods, save/vessel name, UT, orbit, UI scale, and the installed package build/hash manifest.
 
 The development handoff must identify a reproducible starting state and the departure/journey/search bounds used. If the live state is not a reachable fixture for the claimed acceptance case, the developer must supply a recoverable test save or another reproducible state; do not ask Dave to make a preliminary flyby node.
+
+The numeric automatic fixture is reproducible offline but not a passing game-save claim. The live Space Camp capture remains untested; if its phase/bounds fail to yield a complete validated route, record the full generated snapshot/diagnostics for the next offline iteration rather than asking Dave to prepare a manoeuvre. Do not mark this acceptance gate passed on synthetic recovery alone.
 
 ## One combined KSP session
 

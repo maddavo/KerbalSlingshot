@@ -13,8 +13,7 @@ namespace KerbalSlingshot.KSP
         private Texture2D? toolbarIcon;
         private Texture2D? panelTexture;
         private bool clearFocus;
-        private bool manualOpen,advancedOpen,detailsOpen,estimateReady;
-        private string estimateSource="No estimate imported";
+        private bool advancedOpen,detailsOpen;
         private PlannerResultCard? resultCard;
         private Vector2 advancedScroll,detailsScroll;
         private GUIStyle? labelStyle,headingStyle,fieldStyle,buttonStyle,noteStyle,windowStyle;
@@ -22,7 +21,7 @@ namespace KerbalSlingshot.KSP
             "Departure +/- s","Journey limit s","Delta-v limit m/s","Scan step s","Scan steps","Evaluations",
             "Time step s","DV step m/s","Wall budget s"};
         private static readonly string[] AdvancedLabels={"Terrain ceiling, all bodies (km)","Minimum assist altitude (km)","Clearance margin (km)","Periapsis tolerance (m)",
-            "Departure window +/- (s)","Journey limit (s)","Departure delta-v limit (m/s)","Maximum scan step (s)","Maximum scan steps","Evaluation limit",
+            "Departure window (s)","Journey limit (s)","Departure delta-v limit (m/s)","Maximum scan step (s)","Maximum scan steps","Evaluation limit",
             "Refinement time step (s)","Refinement DV step (m/s)","Wall-time budget (s)"};
 
         private void EnsureToolbar()
@@ -79,10 +78,10 @@ namespace KerbalSlingshot.KSP
             {
                 GUI.skin=HighLogic.Skin; Styles();
                 window.width=PlannerLayout.Width;
-                window.height=PlannerLayout.Height(manualOpen,advancedOpen,detailsOpen,Screen.height);
+                window.height=PlannerLayout.Height(false,advancedOpen,detailsOpen,Screen.height);
                 window.x=Math.Max(0,Math.Min(window.x,Screen.width-window.width));
                 window.y=Math.Max(28,Math.Min(window.y,Screen.height-window.height));
-                window=GUI.Window(GetInstanceID(),window,DrawWindow,"KerbalSlingshot 0.2.1",windowStyle!);
+                window=GUI.Window(GetInstanceID(),window,DrawWindow,"KerbalSlingshot 0.3.0",windowStyle!);
                 if (window.Contains(Event.current.mousePosition) || GUI.GetNameOfFocusedControl().StartsWith("slingshot:",StringComparison.Ordinal))
                     InputLockManager.SetControlLock(ControlTypes.ALL_SHIP_CONTROLS,InputLock);
                 else InputLockManager.RemoveControlLock(InputLock);
@@ -111,8 +110,6 @@ namespace KerbalSlingshot.KSP
             string next=GUI.TextField(rect,fields[key],fieldStyle!);
             if (next==fields[key]) return;
             fields[key]=next;
-            if (key=="Departure UT" || key=="Radial m/s" || key=="Normal m/s" || key=="Prograde m/s")
-            { estimateReady=true; estimateSource="Manual estimate"; }
             if (key=="Terrain ceiling km") terrainConfirmed=false;
             Invalidate("Input changed; recalculate.");
         }
@@ -132,16 +129,15 @@ namespace KerbalSlingshot.KSP
             try { PlannerSettings.Parse(fields); valid=true; } catch (ArgumentException ex) { return ex.Message; }
             if (bodyIds.Length<2) return "Read a vessel with two supported sibling targets.";
             if (assistIndex==destinationIndex) return "Choose two different target bodies.";
-            if (!estimateReady) return "Import an existing node, or open Manual estimate.";
             if (!terrainConfirmed) return "Open Advanced and review the required safety settings.";
-            return "Evaluate checks this burn; Refine searches nearby burns.";
+            return "Seeds are generated internally; no preliminary node is needed.";
         }
 
         private void DrawWindow(int id)
         {
             bool busy=job!=null;
             string readiness=Readiness(out bool valid);
-            var controls=new PlannerButtons(busy,bodyIds.Length>=2,assistIndex!=destinationIndex,estimateReady,terrainConfirmed,valid);
+            var controls=new PlannerButtons(busy,bodyIds.Length>=2,assistIndex!=destinationIndex,true,terrainConfirmed,valid);
             GUI.enabled=controls.Edit;
             GUI.Label(new Rect(14,28,382,22),new GUIContent(PlannerResultCard.Short(context,48),context),noteStyle!);
             if (Button(406,26,96,"Refresh")) Try(ReadContext);
@@ -149,40 +145,22 @@ namespace KerbalSlingshot.KSP
             Target(78,"Gravity Assist Target",ref assistIndex);
             Target(108,"Intercept Target",ref destinationIndex);
             Field(140,"Intercept Pe km","Destination periapsis","km");
-            Label(14,174,492,"Starting estimate",true);
-            GUI.enabled=controls.Import;
-            if (Button(14,198,280,"Import existing node (recommended)")) Try(ImportNode);
-            GUI.enabled=controls.Edit;
-            if (Button(306,198,196,manualOpen?"Hide manual estimate":"Manual estimate"))
-            {
-                manualOpen=!manualOpen;
-                if (manualOpen && !estimateReady) { estimateReady=true; estimateSource="Manual estimate"; }
-            }
-            string estimate=estimateSource;
-            if (estimateReady && double.TryParse(fields["Departure UT"],System.Globalization.NumberStyles.Float,Invariant,out double ut))
-                estimate+=" | UT "+PlannerResultCard.Time(ut);
-            Note(230,estimate,20);
-            int offset=manualOpen?PlannerLayout.ManualHeight:0;
-            if (manualOpen)
-            {
-                Field(252,"Departure UT","Burn time","UT seconds");
-                Label(14,280,492,"Native burn components (m/s): radial / normal / prograde");
-                EditField(new Rect(14,304,154,24),"Radial m/s");
-                EditField(new Rect(180,304,154,24),"Normal m/s");
-                EditField(new Rect(346,304,156,24),"Prograde m/s");
-            }
+            Label(14,174,492,"Automatic route search",true);
+            Note(198,"Kerbin SOI -> unpowered Mun assist -> Minmus periapsis.\nNo imported node or manual burn estimate required.",46);
+            int offset=0;
             GUI.enabled=true;
             Label(14,254+offset,492,"Calculate",true);
             GUI.enabled=controls.Calculate;
-            if (Button(14,278+offset,158,"Evaluate estimate","Check the exact starting estimate")) Try(()=>Begin(false));
-            if (Button(182,278+offset,158,"Refine estimate","Search bounded nearby burns")) Try(()=>Begin(true));
+            if (Button(14,278+offset,158,"Find Trajectory")) Try(BeginAutomatic);
+            GUI.enabled=!busy && CanCreateCurrent();
+            if (Button(182,278+offset,158,"Create Node")) Try(CreateNode);
             GUI.enabled=controls.Cancel;
             if (Button(350,278+offset,152,"Cancel")) Invalidate("Cancelled; no nodes changed.");
             GUI.enabled=true;
             Note(308+offset,busy?"Calculating — inputs locked; Cancel remains available.":readiness,32);
             DrawResult(offset,busy);
             float y=574+offset;
-            if (Button(14,y,488,(advancedOpen?"- ":"+ ")+"Advanced"+(terrainConfirmed?" — safety reviewed":" — safety review required")))
+            if (Button(14,y,488,(advancedOpen?"- ":"+ ")+"Advanced"+(terrainConfirmed?" — safety preset active":" — safety review required")))
             { advancedOpen=!advancedOpen; if (advancedOpen) detailsOpen=false; }
             y+=32;
             if (advancedOpen) { DrawAdvanced(y); y+=PlannerLayout.AdvancedHeight; }
@@ -203,13 +181,15 @@ namespace KerbalSlingshot.KSP
                 GUI.Label(new Rect(0,0,460,height),details,noteStyle); GUI.EndScrollView();
                 y+=available;
             }
-            Note(window.height-30,"Shared-parent routes only. No node creation or flight changes.",24);
+            Note(window.height-30,"One departure node on request. No burn execution or time warp.",24);
             GUI.DragWindow(new Rect(0,0,window.width-20,24));
         }
         private void DrawResult(int offset,bool busy)
         {
             float top=PlannerLayout.ResultTop+offset;
             string heading=resultCard?.Heading ?? PlannerResultCard.Short(status,55);
+            if(validation!=null) heading=validation.Passed?"KSP-validated complete route":"KSP validation failed — node disabled";
+            if(nodeCreated) heading="Departure node created and verified";
             if (busy && job!=null)
             {
                 Progress progress=Volatile.Read(ref job.Progress);
@@ -220,7 +200,7 @@ namespace KerbalSlingshot.KSP
             GUI.Box(new Rect(14,top,488,42),GUIContent.none);
             GUI.Label(new Rect(24,top+1,468,22),new GUIContent(heading,status),headingStyle!);
             GUI.color=previous;
-            GUI.Label(new Rect(24,top+23,468,18),resultCard?.Validation ?? "Unvalidated — compare predictions with KSP",noteStyle!);
+            GUI.Label(new Rect(24,top+23,468,18),nodeCreated?"One node added; no burn execution or time warp":validation?.Passed==true?"Reviewed KSP prediction; Create Node is available":resultCard?.Validation ?? "Node creation requires full KSP validation",noteStyle!);
             float y=top+48;
             Label(14,y,270,"Departure: "+(resultCard?.Departure ?? "--"));
             Label(292,y,210,"Delta-v: "+(resultCard?.DeltaV ?? "--"));
@@ -248,7 +228,7 @@ namespace KerbalSlingshot.KSP
                 EditField(new Rect(286,row,166,24),AdvancedKeys[i]);
             }
             GUI.Label(new Rect(0,28,460,24),"Conservative ceiling for the parent and every child body.",noteStyle!);
-            bool confirmed=GUI.Toggle(new Rect(0,54,460,26),terrainConfirmed,"I checked this conservative terrain ceiling");
+            bool confirmed=GUI.Toggle(new Rect(0,54,460,26),terrainConfirmed,"Use this conservative ceiling (stock preset: 10 km)");
             if (confirmed!=terrainConfirmed) { terrainConfirmed=confirmed; Invalidate("Safety assumption changed; recalculate."); }
             GUI.enabled=previous; GUI.EndScrollView();
         }

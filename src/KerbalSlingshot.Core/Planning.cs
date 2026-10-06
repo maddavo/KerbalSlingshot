@@ -75,7 +75,7 @@ namespace KerbalSlingshot.Core
             MaxDeltaV=Positive("Delta-v limit m/s",true);
             MaxStep=Positive("Scan step s");
             MaxSteps=Integer("Scan steps",200000);
-            Budget=Integer("Evaluations",2000);
+            Budget=Integer("Evaluations",20000);
             WallSeconds=Positive("Wall budget s");
             TimeStep=Positive("Time step s");
             VelocityStep=Positive("DV step m/s");

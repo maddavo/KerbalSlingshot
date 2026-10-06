@@ -39,18 +39,22 @@ namespace KerbalSlingshot.KSP
 
         public static CapturedPlan Capture(PlannerSettings settings,string assist,string destination,bool terrainConfirmed)
         {
-            if (!terrainConfirmed) throw new ArgumentException("Confirm conservative terrain ceilings before calculating");
+            if (!terrainConfirmed) throw new ArgumentException("Review the changed terrain ceiling before calculating");
             Vessel v=Active();
+            if(v.ctrlState.mainThrottle>1e-6f) throw new ArgumentException("Coast with throttle zero before planning");
             CelestialBody parent=v.orbit.referenceBody;
             CelestialBody[] children=Children(parent);
+            if(parent.bodyName!="Kerbin" || assist!="Mun" || destination!="Minmus")
+                throw new ArgumentException("Initial route supports Kerbin SOI -> Mun -> Minmus only");
+            if(Math.Abs(parent.Radius-600000)>1 || Math.Abs(parent.gravParameter/3.5316e12-1)>1e-5 ||
+                children.Length!=2 || !children.Any(b=>b.bodyName=="Mun" && Math.Abs(b.Radius-200000)<1) ||
+                !children.Any(b=>b.bodyName=="Minmus" && Math.Abs(b.Radius-60000)<1))
+                throw new ArgumentException("Stock Kerbin/Mun/Minmus safety defaults do not cover this system");
             if (children.Length<2 || !children.Any(b=>b.bodyName==assist) || !children.Any(b=>b.bodyName==destination))
                 throw new ArgumentException("Unsupported route: choose two direct children of the vessel's current parent SOI");
             if (children.Where(b=>b.bodyName==assist || b.bodyName==destination).Any(b=>Children(b).Length>0))
                 throw new ArgumentException("Unsupported nested route: selected targets have children whose SOI encounters are not modelled");
             double now=Planetarium.GetUniversalTime();
-            if (settings.SeedUT<=now) throw new ArgumentException("Departure UT must be in the future");
-            if (v.patchedConicSolver!=null && v.patchedConicSolver.maneuverNodes.Count(n=>n.UT>now)>1)
-                throw new ArgumentException("More than one future node: a single-burn comparison is unsupported; no nodes were changed");
             State vessel=ApiContract.ReadInertialState(v.orbit,now);
             Body[] bodies=children.Select(b=>new Body(b.bodyName,b.gravParameter,b.Radius,b.sphereOfInfluence,
                 ApiContract.ReadInertialState(b.orbit,now),settings.TerrainCeiling,b.atmosphere?b.atmosphereDepth:0)).ToArray();
@@ -59,13 +63,11 @@ namespace KerbalSlingshot.KSP
             double safe=parent.Radius+Math.Max(settings.TerrainCeiling,parent.atmosphere?parent.atmosphereDepth:0)+settings.Margin;
             var request=new Request(now,parent.gravParameter,safe,parentSoi,vessel,bodies,assist,destination,
                 settings.TargetAltitude,settings.AssistAltitude,settings.Margin,settings.Tolerance,
-                Math.Max(now,settings.SeedUT-settings.Window),settings.SeedUT+settings.Window,settings.Duration,
+                now+600,now+600+settings.Window,settings.Duration,
                 settings.MaxDeltaV,settings.MaxStep,settings.MaxSteps);
             string? invalid=request.InvalidReason();
             if (invalid!=null) throw new ArgumentException("Snapshot rejected: "+invalid);
-            V3 delta=ApiContract.ReadBurnFrame(v.orbit,settings.SeedUT).ToInertial(settings.SeedComponents);
-            if (delta.Length>settings.MaxDeltaV) throw new ArgumentException("Starting estimate exceeds the delta-v bound");
-            return new CapturedPlan(request,new Burn(settings.SeedUT,delta),v,capped);
+            return new CapturedPlan(request,new Burn(request.Earliest,new V3(0,0,0)),v,capped);
         }
 
         public static ManeuverNode SingleFutureNode()
@@ -78,7 +80,7 @@ namespace KerbalSlingshot.KSP
                 throw new InvalidOperationException("Existing node is on another SOI patch");
             BurnFrame frame=ApiContract.ReadBurnFrame(v.orbit,node.UT);
             V3 expected=frame.ToInertial(ApiContract.ToCore(node.DeltaV));
-            V3 actual=ApiContract.ToCore(Planetarium.Zup.WorldToLocal(node.GetBurnVector(v.orbit)));
+            V3 actual=ApiContract.ToCore(node.GetBurnVector(v.orbit).xzy);
             if ((expected-actual).Length>Math.Max(1e-6,actual.Length*1e-8))
                 throw new InvalidOperationException("Native burn-frame check failed; report the node and KSP log");
             return node;

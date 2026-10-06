@@ -14,6 +14,9 @@ Milestones 1 and 2 add no third-party numerical library or copied solver code. C
 | UnityEngine.AnimationModule / TextRenderingModule | Local KSP runtime | Stock toolbar type hierarchy and explicit GUI text styles | Local compile references only, `Private=false`; no Unity files packaged |
 | System.Reflection.Metadata / PEReader | .NET 8 SDK/shared framework | Offline startup/reference metadata inspection | Harness-only framework libraries; not packaged with plugin |
 | MechJeb source | Local commit `aeee32212801b987e0fffcad800e0cb565584abb` | Design/API research | No runtime/build dependency; no solver implementation copied |
+| ILSpy command-line | 9.1.0.7988; package declares MIT | Local installed-KSP API inspection | Ignored artifacts/tools only; not a runtime dependency or packaged file |
+
+0.3.0's zero-revolution Lambert implementation is authored here from universal-variable equations, not imported from MechJeb/ALGLIB or another solver. The KSP native-frame/API behaviour was inspected locally; proprietary decompiler output stays in ignored artifacts/api and is not committed or distributed.
 
 The two NuGet packages' installed `.nuspec` files identify Microsoft, mark them as development dependencies, and point to [Microsoft's licence](https://github.com/Microsoft/dotnet/blob/master/LICENSE). This records the declared licence location; review its terms before redistribution. Do not assume all .NET/game/Unity reference binaries share one licence.
 

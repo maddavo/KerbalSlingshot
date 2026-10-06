@@ -9,7 +9,7 @@ namespace KerbalSlingshot.Core
     {
         public static State BodyAt(Request r, Body b, double ut) => Kepler.Propagate(b.EpochState,r.ParentMu,ut-r.Epoch);
 
-        public static Evaluation Evaluate(Request r, Burn burn, CancellationToken cancellation=default)
+        public static Evaluation Evaluate(Request r, Burn burn, CancellationToken cancellation=default,bool stopAfterAssist=false)
         {
             var events=new List<EncounterEvent>();
             int steps=0;
@@ -158,6 +158,7 @@ namespace KerbalSlingshot.Core
                     {
                         events.Add(new EncounterEvent(kind,active.Id,eventT,at,par));
                         double altitude=at.R.Length-active.Radius;
+                        if(stage==3) score=Math.Abs(altitude-r.TargetAltitude);
                         if (at.R.Length<active.SafeRadius(r.ClearanceMargin)) return End(EvaluationStatus.Rejected,"unsafe periapsis");
                         if (stage==1)
                         {
@@ -184,6 +185,7 @@ namespace KerbalSlingshot.Core
                             return End(EvaluationStatus.Rejected,"assist exit is not a continuous unpowered escape");
                         events.Add(new EncounterEvent(kind,active.Id,eventT,at,par));
                         patch=par; patchUT=eventT; t=eventT; active=null; stage=2; score=2e4;
+                        if(stopAfterAssist) return End(EvaluationStatus.Rejected,"Assist-only diagnostic; destination not evaluated");
                     }
                 }
                 return End(EvaluationStatus.Rejected,"journey bound exhausted without complete encounter");

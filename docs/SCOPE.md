@@ -4,6 +4,8 @@ Product contract clarified 6 October 2026: the pilot selects the assist body, de
 
 The installed 0.2.1 prototype does not yet meet this contract. It refines a supplied estimate, has a reported native burn-frame import failure, does not validate candidates against KSP, and cannot create nodes. It is an interim engineering prototype, not a usable implementation of the requested workflow. See [Milestone 3](MILESTONE-3.md) and the next implementation gates in [DEVELOPMENT.md](DEVELOPMENT.md).
 
+Build 0.3.0 implements those missing paths for testing, with automatic seed generation and KSP-gated node creation. It is not yet installed or live-validated; Dave explicitly deferred installation. [Milestone 4](MILESTONE-4.md) records actual offline/build evidence. The acceptance criteria here are unchanged.
+
 ## Goal
 
 From the active vessel's actual orbit, automatically find a bounded, feasible single-burn trajectory that enters the selected gravity-assist body's SOI, performs a safe unpowered flyby, exits that SOI unbound, then encounters the selected destination at the requested periapsis altitude. After the user reviews the fully KSP-validated candidate and chooses **Create Node**, add the departure manoeuvre node to the vessel.

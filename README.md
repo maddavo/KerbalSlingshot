@@ -4,7 +4,7 @@ A proposed gravity-assist manoeuvre planner for **Kerbal Space Program 1**.
 
 Choose a **Gravity Assist Target**, an **Intercept Target**, and an **Intercept Target Distance**. KerbalSlingshot will search for one departure manoeuvre that sends the active vessel through the assist body's sphere of influence (SOI), leaves it on an escape trajectory, and subsequently encounters the destination at the requested periapsis altitude.
 
-**Status: interim test prototype, version 0.2.1.** It builds for .NET Framework 4.8 against KSP 1.12.5, but it does not yet perform the requested job: it requires a pilot-supplied starting estimate, automatic seed generation is absent, a native burn-frame import failure has been reported, candidates are not validated against KSP, and it cannot create nodes. Do not treat it as a working Mun-to-Minmus slingshot planner. The product goal below is the corrected user contract; these missing capabilities are the next development work.
+**Status: automatic-planning test build 0.3.0.** Internal seed generation, full-route numerical search, temporary KSP validation and guarded **Create Node** are implemented and build for KSP 1.12.5 / .NET Framework 4.8. Forty offline check groups pass, including automatic stock-scale Mun/Minmus recovery without supplied seeds. Live KSP search/validation/insertion remain untested. Installation is held at Dave's request; the currently installed files are unchanged. See [Milestone 4](docs/MILESTONE-4.md) and the [single-session handoff](docs/AUTOMATIC-HANDOFF.md).
 
 ## Intended flight sequence
 
@@ -28,7 +28,7 @@ The node describes the departure burn. Gravity and the encounter geometry produc
 4. Review the complete predicted flyby and destination encounter. The mod enables **Create Node** only after KSP validates the full route, frame conversion, safety, and periapsis.
 5. Press **Create Node** to add the single departure node. The mod never executes the burn or changes time warp.
 
-This is the product contract, not a claim about version 0.2.1. See [scope](docs/SCOPE.md) and [development stages](docs/DEVELOPMENT.md) for the gap and acceptance criteria.
+The initial live implementation is specifically Kerbin SOI -> Mun -> Minmus, outside child SOIs. No preliminary node or burn input is requested. A numerical candidate alone never enables Create Node: runtime KSP checks, freshness and absence of conflicting future nodes are required. This describes implemented code, not an asserted live test pass.
 
 ## Build and offline checks
 
@@ -44,7 +44,7 @@ To also build and inspect the actual flight plugin, provide your local `KSP_x64_
 ./check.ps1 -KspManagedPath 'C:/path/to/Kerbal Space Program/KSP_x64_Data/Managed'
 ```
 
-The core targets `net48` and `net8.0`; the harness runs on .NET 8, and the flight plugin targets `net48`. Game assemblies stay outside the repository and are not copied to outputs. From a clean commit, `./package.ps1 -KspManagedPath 'C:/path/to/KSP_x64_Data/Managed'` produces a hashed local test ZIP with only the two mod DLLs and handoff documents. These commands do not launch KSP, install a DLL, or publish a release. See [current UI milestone evidence](docs/MILESTONE-3.md).
+The core targets `net48` and `net8.0`; the harness runs on .NET 8, and the flight plugin targets `net48`. Game assemblies stay outside the repository and are not copied to outputs. From a clean commit, `./package.ps1 -KspManagedPath 'C:/path/to/KSP_x64_Data/Managed'` produces a hashed local test ZIP with only the two mod DLLs and handoff documents. These commands do not launch KSP, install a DLL, or publish a release. See [current automatic-planning evidence](docs/MILESTONE-4.md).
 
 ## Documentation
 
@@ -55,6 +55,7 @@ The core targets `net48` and `net8.0`; the harness runs on .NET 8, and the fligh
 - [Milestone 1 evidence](docs/MILESTONE-1.md): implemented behaviour, reproducible checks, and unresolved questions.
 - [Milestone 2 evidence](docs/MILESTONE-2.md), [installation/rollback](docs/INSTALL.md), and [combined KSP test](docs/KSP-TEST.md).
 - [Milestone 3 UI evidence and product correction](docs/MILESTONE-3.md), [automatic-planning KSP test](docs/KSP-TEST.md), and [UI acceptance checklist](docs/UI-ACCEPTANCE.md).
+- [Milestone 4](docs/MILESTONE-4.md) and [concise automatic-search/node handoff](docs/AUTOMATIC-HANDOFF.md).
 - [Dependency/licence review](docs/DEPENDENCIES.md) and [fixture provenance](fixtures/README.md).
 - [Change log](CHANGELOG.md).
 

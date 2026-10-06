@@ -1,6 +1,6 @@
 # Development stages
 
-Current stage: **replace the estimate-driven prototype with automatic route search and node creation**. The 0.2.1 build is installed for testing, but its workflow is incomplete: it requires a supplied estimate, the screenshot shows a native burn-frame import failure, it does not validate a candidate against KSP, and it cannot create a node. Dave's requested route starts from his current Kerbin orbit with Mun assist and Minmus destination and no preparatory node. The next development work must make automatic candidate generation, full KSP validation, and explicit node creation work before asking him to repeat trajectory setup. See [SCOPE.md](SCOPE.md), [MILESTONE-3.md](MILESTONE-3.md), and [KSP-TEST.md](KSP-TEST.md).
+Current stage: **automatic-search/validated-node test build 0.3.0**. Internal generated seeds, bounded full-route refinement, fixed native-frame conversion, temporary KSP patch validation and transactional node creation are implemented. Forty offline check groups and actual plugin build/metadata checks pass. No in-game pass is claimed. The installed 0.2.1 files remain unchanged because Dave explicitly holds installation until he advises KSP is closed and asks to proceed. See [MILESTONE-4.md](MILESTONE-4.md), the unchanged [product contract](SCOPE.md), and [AUTOMATIC-HANDOFF.md](AUTOMATIC-HANDOFF.md). Gates requiring live evidence remain open.
 
 ## Development iteration procedure
 

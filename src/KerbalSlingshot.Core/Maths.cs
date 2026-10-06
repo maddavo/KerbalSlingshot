@@ -65,12 +65,17 @@ namespace KerbalSlingshot.Core
             while (Equation(hi) < 0 && expansions++ < 80) hi *= 2;
             if (!Numeric.Finite(Equation(hi)) || Equation(hi) < 0)
                 throw new ArithmeticException("Universal-variable bracket exhausted");
+            double chi=(lo+hi)/2;
             for (int i = 0; i < 90; i++)
             {
-                double mid = (lo + hi) / 2;
-                if (Equation(mid) > 0) hi = mid; else lo = mid;
+                double value=Equation(chi);
+                if(Math.Abs(value)<=1e-14*Math.Max(1,sqrtMu*dt)) break;
+                if(value>0) hi=chi; else lo=chi;
+                Stumpff(alpha*chi*chi,out double c,out double ss);
+                double derivative=rv*chi*(1-alpha*chi*chi*ss)+(1-alpha*r0)*chi*chi*c+r0;
+                double trial=chi-value/derivative;
+                chi=Numeric.Finite(trial) && trial>lo && trial<hi?trial:(lo+hi)/2;
             }
-            double chi = (lo + hi) / 2;
             Stumpff(alpha*chi*chi, out double cc, out double sc);
             double f = 1 - chi*chi*cc/r0;
             double g = dt - chi*chi*chi*sc/sqrtMu;
@@ -83,7 +88,7 @@ namespace KerbalSlingshot.Core
             return result;
         }
 
-        private static void Stumpff(double z, out double c, out double s)
+        internal static void Stumpff(double z, out double c, out double s)
         {
             if (Math.Abs(z) < 1e-3)
             {

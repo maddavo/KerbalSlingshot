@@ -2,6 +2,8 @@
 
 This is the product architecture required by the clarified user workflow in [SCOPE.md](SCOPE.md). The 0.2.1 prototype has live snapshots and a local solver, but still requires a pilot-supplied estimate, has a reported native burn-frame import failure, lacks automatic seed generation and full candidate validation, and cannot create a node. Those are implementation gaps, not pilot setup requirements. Its offline-feasible results retain no KSP-validation authority.
 
+The 0.3.0 test implementation now generates its own Lambert/impact-plane seeds, numerically refines the complete route, validates temporary KSP patches/native fixed frames, and offers guarded explicit insertion with post-insertion verification/rollback. See [MILESTONE-4.md](MILESTONE-4.md) for implemented details and evidence; its live KSP acceptance remains pending. This does not loosen the contract below or expand route coverage.
+
 ## Components
 
 | Component | Responsibility |
